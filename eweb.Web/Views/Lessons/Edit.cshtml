@@ -1,0 +1,34 @@
+﻿@model eweb.Web.Models.Lessons.EditLessonViewModel
+
+<h2>Редагувати урок</h2>
+
+<form asp-action="Edit">
+    <input type="hidden" asp-for="Id" />
+
+    <div class="form-group">
+        <label asp-for="Number"></label>
+        <input asp-for="Number" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Title"></label>
+        <input asp-for="Title" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Description"></label>
+        <input asp-for="Description" class="form-control" />
+    </div>
+
+    <div class="form-group">
+        <label asp-for="Content"></label>
+        <textarea asp-for="Content" class="form-control"></textarea>
+    </div>
+
+    <div class="form-check">
+        <input asp-for="IsPublished" class="form-check-input" />
+        <label asp-for="IsPublished" class="form-check-label"></label>
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-3">Зберегти</button>
+</form>
