@@ -12,6 +12,5 @@ public class CreateQuestionViewModel
 public class AnswerOptionInputModel
 {
     public string Text { get; set; } = string.Empty;
-
     public bool IsCorrect { get; set; }
 }
