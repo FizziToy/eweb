@@ -1,9 +1,12 @@
 ﻿using eweb.Domain.Constants;
 using eweb.Domain.Entities;
+using eweb.Domain.Entities.Progress;
 using eweb.Infrastructure.Data;
+using eweb.Infrastructure.Identity;
 using eweb.Web.Models.Lessons;
 using eweb.Web.Models.Questions;
 using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 
@@ -13,10 +16,12 @@ namespace eweb.Web.Controllers;
 public class LessonsController : Controller
 {
     private readonly ApplicationDbContext _context;
+    private readonly UserManager<ApplicationUser> _userManager;
 
-    public LessonsController(ApplicationDbContext context)
+    public LessonsController(ApplicationDbContext context,UserManager<ApplicationUser> userManager)
     {
         _context = context;
+        _userManager = userManager;
     }
 
     // ==============================
@@ -53,6 +58,21 @@ public class LessonsController : Controller
         if (lesson == null)
             return NotFound();
 
+        var userId = _userManager.GetUserId(User);
+
+        if (userId != null)
+        {
+            var exists = await _context.UserLessonProgresses
+                .AnyAsync(x => x.UserId == userId && x.LessonId == id);
+
+            if (!exists)
+            {
+                var progress = new UserLessonProgress(userId, id);
+                _context.UserLessonProgresses.Add(progress);
+                await _context.SaveChangesAsync();
+            }
+        }
+
         var model = new LessonDetailsViewModel
         {
             LessonId = lesson.Id,
@@ -85,9 +105,11 @@ public class LessonsController : Controller
     // ==============================
 
     [HttpPost]
-    [AllowAnonymous]
+    [Authorize]
     public async Task<IActionResult> Details(LessonDetailsViewModel model)
     {
+        var userId = _userManager.GetUserId(User);
+
         var lesson = await _context.Lessons
             .Include(l => l.Questions)
                 .ThenInclude(q => q.AnswerOptions)
@@ -96,11 +118,8 @@ public class LessonsController : Controller
         if (lesson == null)
             return NotFound();
 
-        int totalCorrectAnswers = lesson.Questions
-            .SelectMany(q => q.AnswerOptions)
-            .Count(a => a.IsCorrect);
-
-        int userCorrectAnswers = 0;
+        int totalQuestions = lesson.Questions.Count;
+        int completedQuestions = 0;
 
         foreach (var question in lesson.Questions)
         {
@@ -110,27 +129,42 @@ public class LessonsController : Controller
             if (userQuestion == null)
                 continue;
 
-            foreach (var answer in question.AnswerOptions)
-            {
-                var userAnswer = userQuestion.Answers
-                    .FirstOrDefault(a => a.AnswerId == answer.Id);
+            var correctAnswerIds = question.AnswerOptions
+                .Where(a => a.IsCorrect)
+                .Select(a => a.Id)
+                .ToList();
 
-                if (userAnswer != null &&
-                    userAnswer.IsSelected &&
-                    answer.IsCorrect)
+            var selectedAnswerIds = userQuestion.Answers
+                .Where(a => a.IsSelected)
+                .Select(a => a.AnswerId)
+                .ToList();
+
+            // Перевірка: всі правильні і жодної зайвої
+            bool isCorrect =
+                selectedAnswerIds.Count == correctAnswerIds.Count &&
+                selectedAnswerIds.All(id => correctAnswerIds.Contains(id));
+
+            if (isCorrect)
+            {
+                completedQuestions++;
+
+                var exists = await _context.UserQuestionProgresses
+                    .AnyAsync(x => x.UserId == userId && x.QuestionId == question.Id);
+
+                if (!exists)
                 {
-                    userCorrectAnswers++;
+                    var progress = new UserQuestionProgress(userId, question.Id);
+                    _context.UserQuestionProgresses.Add(progress);
                 }
             }
         }
 
-        double percent = totalCorrectAnswers == 0
-            ? 0
-            : Math.Round(
-                (double)userCorrectAnswers /
-                totalCorrectAnswers * 100, 2);
+        await _context.SaveChangesAsync();
 
-        // перезаповнюємо модель
+        double percent = totalQuestions == 0
+            ? 0
+            : Math.Round((double)completedQuestions / totalQuestions * 100, 2);
+
         var resultModel = new LessonDetailsViewModel
         {
             LessonId = lesson.Id,

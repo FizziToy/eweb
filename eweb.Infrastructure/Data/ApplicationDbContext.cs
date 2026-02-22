@@ -1,7 +1,9 @@
-﻿using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
-using Microsoft.EntityFrameworkCore;
+﻿using eweb.Domain.Entities;
+using eweb.Domain.Entities.Progress;
 using eweb.Infrastructure.Identity;
-using eweb.Domain.Entities;
+using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
+using Microsoft.EntityFrameworkCore;
+using System.Reflection.Emit;
 
 namespace eweb.Infrastructure.Data;
 
@@ -14,6 +16,9 @@ public class ApplicationDbContext: IdentityDbContext<ApplicationUser>
     public DbSet<Lesson> Lessons { get; set; }
     public DbSet<TheoryQuestion> TheoryQuestions { get; set; } = null!;
     public DbSet<AnswerOption> AnswerOptions { get; set; } = null!;
+    public DbSet<UserLessonProgress> UserLessonProgresses { get; set; }
+    public DbSet<UserQuestionProgress> UserQuestionProgresses { get; set; }
+    public DbSet<UserExerciseTaskProgress> UserExerciseTaskProgresses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -32,5 +37,14 @@ public class ApplicationDbContext: IdentityDbContext<ApplicationUser>
             .WithOne()
             .HasForeignKey("TheoryQuestionId")
             .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<UserLessonProgress>()
+            .HasKey(x => new { x.UserId, x.LessonId });
+
+        builder.Entity<UserQuestionProgress>()
+            .HasKey(x => new { x.UserId, x.QuestionId });
+
+        builder.Entity<UserExerciseTaskProgress>()
+            .HasKey(x => new { x.UserId, x.ExerciseTaskId });
     }
 }
