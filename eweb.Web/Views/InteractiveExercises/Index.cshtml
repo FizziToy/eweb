@@ -1,0 +1,78 @@
+﻿@model IEnumerable<eweb.Domain.Entities.Exercises.InteractiveExercise>
+
+<h2>Interactive Exercises</h2>
+
+@if (TempData["Error"] != null)
+{
+    <div style="color:red; font-weight:bold;">
+        @TempData["Error"]
+    </div>
+}
+
+<br />
+
+<a asp-action="CreateFull">Create New</a>
+
+<br />
+<br />
+
+<table border="1" cellpadding="5">
+    <thead>
+        <tr>
+            <th>Id</th>
+            <th>LessonId</th>
+            <th>Title</th>
+            <th>Order</th>
+            <th>Status</th>
+            <th>Actions</th>
+        </tr>
+    </thead>
+    <tbody>
+        @foreach (var ex in Model)
+        {
+            <tr>
+                <td>@ex.Id</td>
+                <td>@ex.LessonId</td>
+                <td>@ex.Title</td>
+                <td>@ex.Order</td>
+                <td>
+                    @if (ex.IsPublished)
+                    {
+                        <span style="color:green;">Published</span>
+                    }
+                    else
+                    {
+                        <span style="color:gray;">Draft</span>
+                    }
+                </td>
+                <td>
+
+                    @* Publish / Unpublish *@
+                    @if (!ex.IsPublished)
+                    {
+                        <form asp-action="Publish" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="@ex.Id" />
+                            <button type="submit">Publish</button>
+                        </form>
+                    }
+                    else
+                    {
+                        <form asp-action="Unpublish" method="post" style="display:inline;">
+                            <input type="hidden" name="id" value="@ex.Id" />
+                            <button type="submit">Unpublish</button>
+                        </form>
+                    }
+
+                    @* Delete *@
+                    <form asp-action="Delete" method="post" style="display:inline;">
+                        <input type="hidden" name="id" value="@ex.Id" />
+                        <button type="submit" onclick="return confirm('Are you sure?')">
+                            Delete
+                        </button>
+                    </form>
+
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>

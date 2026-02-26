@@ -1,0 +1,152 @@
+﻿@model eweb.Web.Models.Exercises.CreateInteractiveExerciseViewModel
+
+<h2>Create Interactive Exercise</h2>
+
+<form asp-action="CreateFull" method="post">
+    @Html.AntiForgeryToken()
+
+    <div>
+        <label>Lesson</label>
+        <select asp-for="LessonId">
+            <option value="">Select Lesson</option>
+            @foreach (var lesson in ViewBag.Lessons)
+            {
+                <option value="@lesson.Id">
+                    @lesson.Number - @lesson.Title
+                </option>
+            }
+        </select>
+    </div>
+
+    <div>
+        <label>Title</label>
+        <input asp-for="Title" />
+    </div>
+
+    <div>
+        <label>Description</label>
+        <textarea asp-for="Description"></textarea>
+    </div>
+
+    <hr />
+
+    <h3>Tasks</h3>
+
+    <div id="tasks-container"></div>
+
+    <button type="button" id="add-task-btn">+ Add Task</button>
+
+    <br /><br />
+    <button type="submit">Save Exercise</button>
+
+</form>
+
+
+<!-- ================= TEMPLATE ================= -->
+
+<script type="text/template" id="task-template">
+    <div class="task-block" style="border:1px solid gray; padding:10px; margin-bottom:10px;">
+
+        <input type="hidden" name="Tasks.Index" value="__index__" />
+
+        <h4>Task __number__</h4>
+
+        <div>
+            <label>Type</label>
+            <select name="Tasks[__index__].Type">
+                    <option value="1">MultipleChoice</option>
+                    <option value="2">Reorder</option>
+                    <option value="3">MatchPairs</option>
+            </select>
+        </div>
+
+        <div>
+            <label>Question</label>
+            <input name="Tasks[__index__].QuestionText" />
+        </div>
+
+        <div>
+            <label>Stars (1–2)</label>
+            <input name="Tasks[__index__].StarsReward" type="number" min="1" max="2" />
+        </div>
+
+        <hr />
+
+        <h5>MultipleChoice</h5>
+
+        <input name="Tasks[__index__].Option1" placeholder="Option 1" />
+            <input type="checkbox"
+           name="Tasks[__index__].IsOption1Correct"
+           value="true" />
+
+    <input type="hidden"
+           name="Tasks[__index__].IsOption1Correct"
+           value="false" /> Correct
+
+        <input name="Tasks[__index__].Option2" placeholder="Option 2" />
+            <input type="checkbox"
+           name="Tasks[__index__].IsOption2Correct"
+           value="true" />
+
+        <input type="hidden"
+           name="Tasks[__index__].IsOption2Correct"
+           value="false" /> Correct
+
+        <input name="Tasks[__index__].Option3" placeholder="Option 3" />
+            <input type="checkbox"
+           name="Tasks[__index__].IsOption3Correct"
+           value="true" />
+
+        <input type="hidden"
+           name="Tasks[__index__].IsOption3Correct"
+           value="false" /> Correct
+
+        <input name="Tasks[__index__].Option4" placeholder="Option 4" />
+            <input type="checkbox"
+           name="Tasks[__index__].IsOption4Correct"
+           value="true" />
+
+        <input type="hidden"
+           name="Tasks[__index__].IsOption4Correct"
+           value="false" /> Correct
+
+        <hr />
+
+        <button type="button" class="remove-task-btn">Remove</button>
+
+    </div>
+</script>
+
+
+<!-- ================= SCRIPT ================= -->
+
+<script>
+    let taskIndex = 0;
+
+    document.getElementById("add-task-btn").addEventListener("click", function () {
+
+        const container = document.getElementById("tasks-container");
+
+        if (container.children.length >= 5) {
+            alert("Maximum 5 tasks allowed.");
+            return;
+        }
+
+        const template = document.getElementById("task-template").innerHTML;
+
+        const newTask = template
+            .replaceAll("__index__", taskIndex)
+            .replaceAll("__number__", taskIndex + 1);
+
+        container.insertAdjacentHTML("beforeend", newTask);
+
+        taskIndex++;
+    });
+
+    document.addEventListener("click", function (e) {
+        if (e.target.classList.contains("remove-task-btn")) {
+            e.target.closest(".task-block").remove();
+        }
+    });
+
+</script>

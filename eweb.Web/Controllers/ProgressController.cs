@@ -9,21 +9,14 @@ using Microsoft.EntityFrameworkCore;
 namespace eweb.Web.Controllers;
 
 [Authorize]
-public class ProgressController : Controller
+public class ProgressController(
+    ApplicationDbContext context,
+    UserManager<ApplicationUser> userManager,
+    IProgressCalculator progressCalculator) : Controller
 {
-    private readonly ApplicationDbContext _context;
-    private readonly UserManager<ApplicationUser> _userManager;
-    private readonly IProgressCalculator _progressCalculator;
-
-    public ProgressController(
-        ApplicationDbContext context,
-        UserManager<ApplicationUser> userManager,
-        IProgressCalculator progressCalculator)
-    {
-        _context = context;
-        _userManager = userManager;
-        _progressCalculator = progressCalculator;
-    }
+    private readonly ApplicationDbContext _context = context;
+    private readonly UserManager<ApplicationUser> _userManager = userManager;
+    private readonly IProgressCalculator _progressCalculator = progressCalculator;
 
     public async Task<IActionResult> Index()
     {
