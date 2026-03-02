@@ -2,7 +2,7 @@
 
 namespace eweb.Web.Models.Exercises;
 
-public class ExerciseTaskCreateViewModel
+public class ExerciseTaskEditViewModel
     : BaseExerciseTaskViewModel
 {
 }

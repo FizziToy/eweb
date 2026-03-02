@@ -19,14 +19,12 @@ public class ExerciseTask
     private ExerciseTask() { } // для EF
 
     public ExerciseTask(
-        int exerciseId,
         ExerciseType type,
         string questionText,
         string dataJson,
         int starsReward,
         int order)
     {
-        ExerciseId = exerciseId;
         Type = type;
         QuestionText = questionText;
         DataJson = dataJson;

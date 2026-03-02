@@ -1,9 +1,8 @@
-﻿@model eweb.Web.Models.Exercises.CreateInteractiveExerciseViewModel
+﻿@model eweb.Web.Models.Exercises.EditInteractiveExerciseViewModel
 
-<h2>Create Interactive Exercise</h2>
+<h2>Edit Interactive Exercise</h2>
 
-<form asp-action="CreateFull" method="post">
-
+<form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
 
     <div>
@@ -63,7 +62,7 @@
 
                 <div>
                     <label>Питання</label>
-                    <input name="Tasks[@i].QuestionText" value="@Model.Tasks[i].QuestionText" />
+                    <input asp-for="Tasks[@i].QuestionText" />
                 </div>
 
                 <div>
@@ -129,10 +128,10 @@
                     <h5>Будь ласка, запишіть у правильному порядку</h5>
 
                     <div style="display:flex; gap:10px;">
-                        <input name="Tasks[@i].ReorderItem1" placeholder="Слово 1" />
-                        <input name="Tasks[@i].ReorderItem2" placeholder="Слово 2" />
-                        <input name="Tasks[@i].ReorderItem3" placeholder="Слово 3" />
-                        <input name="Tasks[@i].ReorderItem4" placeholder="Слово 4" />
+                        <input name="Tasks[@i].ReorderItem1" value="@Model.Tasks[i].ReorderItem1" />
+                        <input name="Tasks[@i].ReorderItem2" value="@Model.Tasks[i].ReorderItem2" />
+                        <input name="Tasks[@i].ReorderItem3" value="@Model.Tasks[i].ReorderItem3" />
+                        <input name="Tasks[@i].ReorderItem4" value="@Model.Tasks[i].ReorderItem4" />
                     </div>
 
                 </div>
@@ -143,17 +142,17 @@
                     <div style="display:flex; gap:40px;">
 
                         <div>
-                            <input name="Tasks[@i].Left1" placeholder="Лівий 1" /><br />
-                            <input name="Tasks[@i].Left2" placeholder="Лівий 2" /><br />
-                            <input name="Tasks[@i].Left3" placeholder="Лівий 3" /><br />
-                            <input name="Tasks[@i].Left4" placeholder="Лівий 4" />
+                            <input name="Tasks[@i].Left1" value="@Model.Tasks[i].Left1" /><br />
+                            <input name="Tasks[@i].Left2" value="@Model.Tasks[i].Left2" /><br />
+                            <input name="Tasks[@i].Left3" value="@Model.Tasks[i].Left3" /><br />
+                            <input name="Tasks[@i].Left4" value="@Model.Tasks[i].Left4" />
                         </div>
 
                         <div>
-                            <input name="Tasks[@i].Right1" placeholder="Правий 1" /><br />
-                            <input name="Tasks[@i].Right2" placeholder="Правий 2" /><br />
-                            <input name="Tasks[@i].Right3" placeholder="Правий 3" /><br />
-                            <input name="Tasks[@i].Right4" placeholder="Правий 4" />
+                            <input name="Tasks[@i].Right1" value="@Model.Tasks[i].Right1" /><br />
+                            <input name="Tasks[@i].Right2" value="@Model.Tasks[i].Right2" /><br />
+                            <input name="Tasks[@i].Right3" value="@Model.Tasks[i].Right3" /><br />
+                            <input name="Tasks[@i].Right4" value="@Model.Tasks[i].Right4" />
                         </div>
 
                     </div>
@@ -162,17 +161,17 @@
                 <div class="fillgaps-block" style="display:none;">
                     <h5>Заповніть пропуск (одна правильна відповідь)</h5>
 
-                    <input name="Tasks[@i].GapOption1" placeholder="Варіант 1" /><br />
-                    <input name="Tasks[@i].GapOption2" placeholder="Варіант 2" /><br />
-                    <input name="Tasks[@i].GapOption3" placeholder="Варіант 3" /><br />
-                    <input name="Tasks[@i].GapOption4" placeholder="Варіант 4" /><br />
+                    <input name="Tasks[@i].GapOption1" value="@Model.Tasks[i].GapOption1" /><br />
+                    <input name="Tasks[@i].GapOption2" value="@Model.Tasks[i].GapOption2" /><br />
+                    <input name="Tasks[@i].GapOption3" value="@Model.Tasks[i].GapOption3" /><br />
+                    <input name="Tasks[@i].GapOption4" value="@Model.Tasks[i].GapOption4" /><br />
 
                     <p>Оберіть правильний варіант:</p>
                     <select name="Tasks[@i].CorrectOptionIndex">
-                        <option value="1">1</option>
-                        <option value="2">2</option>
-                        <option value="3">3</option>
-                        <option value="4">4</option>
+                        <option value="1" selected="@(Model.Tasks[i].CorrectOptionIndex == 1)">1</option>
+                        <option value="2" selected="@(Model.Tasks[i].CorrectOptionIndex == 2)">2</option>
+                        <option value="3" selected="@(Model.Tasks[i].CorrectOptionIndex == 3)">3</option>
+                        <option value="4" selected="@(Model.Tasks[i].CorrectOptionIndex == 4)">4</option>
                     </select>
                 </div>
 
@@ -298,7 +297,6 @@
 </script>
 
 <!-- ================= SCRIPT ================= -->
-
 <script>
     let taskIndex = @Model.Tasks.Count;
 
@@ -321,21 +319,19 @@
 
         taskIndex++;
     });
-
-    document.addEventListener("click", function (e) {
-        if (e.target.classList.contains("remove-task-btn")) {
-            e.target.closest(".task-block").remove();
-        }
-    });
 </script>
 
 <script>
-    document.addEventListener("change", function(e) {
+    function setBlockState(block, show) {
+        block.style.display = show ? "block" : "none";
 
-        if (!e.target.classList.contains("task-type-select"))
-            return;
+        block.querySelectorAll("input, select").forEach(el => {
+            el.disabled = !show;
+        });
+    }
 
-        const select = e.target;
+    function handleTypeChange(select) {
+
         const taskBlock = select.closest(".task-block");
 
         const mc = taskBlock.querySelector(".multiple-choice-block");
@@ -343,25 +339,31 @@
         const match = taskBlock.querySelector(".matchpairs-block");
         const fill = taskBlock.querySelector(".fillgaps-block");
 
-        mc.style.display = "none";
-        reorder.style.display = "none";
-        match.style.display = "none";
-        fill.style.display = "none";
+        setBlockState(mc, false);
+        setBlockState(reorder, false);
+        setBlockState(match, false);
+        setBlockState(fill, false);
 
         const value = parseInt(select.value);
 
-        if (value === 1) mc.style.display = "block";
-        if (value === 2) reorder.style.display = "block";
-        if (value === 3) match.style.display = "block";
-        if (value === 4) fill.style.display = "block";
-    });
-</script>
+        if (value === 1) setBlockState(mc, true);
+        if (value === 2) setBlockState(reorder, true);
+        if (value === 3) setBlockState(match, true);
+        if (value === 4) setBlockState(fill, true);
+    }
 
-<script>
     document.addEventListener("DOMContentLoaded", function() {
 
         document.querySelectorAll(".task-type-select").forEach(select => {
-            select.dispatchEvent(new Event("change"));
+
+            // Вішаємо listener
+            select.addEventListener("change", function() {
+                handleTypeChange(this);
+            });
+
+            // І одразу запускаємо
+            handleTypeChange(select);
+
         });
 
     });

@@ -13,7 +13,7 @@ public class InteractiveExercise
 
     public bool IsPublished { get; private set; }
 
-    private readonly List<ExerciseTask> _tasks = new();
+    private readonly List<ExerciseTask> _tasks = [];
     public IReadOnlyCollection<ExerciseTask> Tasks => _tasks.AsReadOnly();
 
     private InteractiveExercise() { } // для EF
@@ -46,5 +46,10 @@ public class InteractiveExercise
     public void RemoveTask(ExerciseTask task)
     {
         _tasks.Remove(task);
+    }
+
+    public void ClearTasks()
+    {
+        _tasks.Clear();
     }
 }

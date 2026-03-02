@@ -87,13 +87,13 @@ public class LessonsController : Controller
                 {
                     QuestionId = q.Id,
                     QuestionText = q.QuestionText,
-                    Answers = q.AnswerOptions
+                    Answers = [.. q.AnswerOptions
                         .OrderBy(a => Guid.NewGuid())
                         .Select(a => new LessonDetailsViewModel.AnswerVm
                         {
                             AnswerId = a.Id,
                             Text = a.Text
-                        }).ToList()
+                        })]
                 }).ToList()
         };
 
