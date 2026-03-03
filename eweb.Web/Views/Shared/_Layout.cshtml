@@ -35,13 +35,26 @@
                             </a>
                         </li>
 
-                        <li class="nav-item">
-                            <a class="nav-link text-dark"
-                               asp-controller="InteractiveExercises"
-                               asp-action="Index">
-                                Вправи
-                            </a>
-                        </li>
+                        @if (User.IsInRole("Admin"))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="InteractiveExercises"
+                                   asp-action="Index">
+                                    Адмін вправи
+                                </a>
+                            </li>
+                        }
+                        else if (User.Identity?.IsAuthenticated ?? false)
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link text-dark"
+                                   asp-controller="ExercisePlay"
+                                   asp-action="Index">
+                                    Вправи
+                                </a>
+                            </li>
+                        }
 
                         <li class="nav-item">
                             <a class="nav-link text-dark"

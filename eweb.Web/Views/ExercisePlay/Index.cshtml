@@ -1,0 +1,29 @@
+﻿@model List<eweb.Domain.Entities.Exercises.InteractiveExercise>
+
+<h2>Вправи</h2>
+
+@if (!Model.Any())
+{
+    <p>Поки що немає доступних вправ.</p>
+}
+else
+{
+    @foreach (var exercise in Model)
+    {
+        <div class="card mb-3 p-3">
+            <h4>@exercise.Title</h4>
+
+            @if (!string.IsNullOrEmpty(exercise.Description))
+            {
+                <p>@exercise.Description</p>
+            }
+
+            <form asp-action="Start" method="post">
+                <input type="hidden" name="exerciseId" value="@exercise.Id" />
+                <button type="submit" class="btn btn-primary">
+                    Почати
+                </button>
+            </form>
+        </div>
+    }
+}

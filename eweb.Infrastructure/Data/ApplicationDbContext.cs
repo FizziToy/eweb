@@ -1,6 +1,7 @@
 ﻿using eweb.Domain.Entities;
-using eweb.Domain.Entities.Progress;
+using eweb.Domain.Entities.Attempts;
 using eweb.Domain.Entities.Exercises;
+using eweb.Domain.Entities.Progress;
 using eweb.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
@@ -18,6 +19,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UserExerciseTaskProgress> UserExerciseTaskProgresses { get; set; }
     public DbSet<InteractiveExercise> InteractiveExercises { get; set; }
     public DbSet<ExerciseTask> ExerciseTasks { get; set; }
+    public DbSet<ExerciseAttempt> ExerciseAttempts { get; set; }
+    public DbSet<TaskAttempt> TaskAttempts { get; set; }
+    public DbSet<UserExerciseProgress> UserExerciseProgresses { get; set; }
 
     protected override void OnModelCreating(ModelBuilder builder)
     {
@@ -59,5 +63,14 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<UserExerciseTaskProgress>()
             .HasKey(x => new { x.UserId, x.ExerciseTaskId });
+
+        builder.Entity<ExerciseAttempt>()
+            .HasMany(e => e.TaskAttempts)
+            .WithOne()
+            .HasForeignKey(t => t.ExerciseAttemptId)
+            .OnDelete(DeleteBehavior.Cascade);
+
+        builder.Entity<UserExerciseProgress>()
+            .HasKey(x => new { x.UserId, x.ExerciseId });
     }
 }

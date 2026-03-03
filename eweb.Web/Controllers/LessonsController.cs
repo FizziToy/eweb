@@ -4,7 +4,6 @@ using eweb.Domain.Entities.Progress;
 using eweb.Infrastructure.Data;
 using eweb.Infrastructure.Identity;
 using eweb.Web.Models.Lessons;
-using eweb.Web.Models.Questions;
 using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;

@@ -1,0 +1,31 @@
+﻿@model eweb.Web.Models.ExercisePlay.ExerciseRunViewModel
+
+<h2>@Model.ExerciseTitle</h2>
+
+@if (Model.IsFinished)
+{
+    <p>Цей запуск вже завершений.</p>
+}
+else
+{
+    foreach (var task in Model.Tasks)
+    {
+        <div style="margin-bottom:20px;">
+            <h4>@task.QuestionText</h4>
+
+            <form asp-action="SubmitTask" method="post">
+                <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+                <input type="hidden" name="taskId" value="@task.TaskId" />
+
+                <!-- Поки MVP: просто 2 кнопки -->
+                <button type="submit" name="isCorrect" value="true">Correct</button>
+                <button type="submit" name="isCorrect" value="false">Wrong</button>
+            </form>
+        </div>
+    }
+
+    <form asp-action="Finish" method="post">
+        <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+        <button type="submit">Завершити</button>
+    </form>
+}

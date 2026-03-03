@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using eweb.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using eweb.Infrastructure.Data;
 namespace eweb.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260303191854_AddExerciseAttemptSystem")]
+    partial class AddExerciseAttemptSystem
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -195,12 +198,6 @@ namespace eweb.Infrastructure.Migrations
                     b.Property<int>("ExerciseId")
                         .HasColumnType("int");
 
-                    b.Property<DateTime?>("FinishedAt")
-                        .HasColumnType("datetime2");
-
-                    b.Property<bool>("IsFinished")
-                        .HasColumnType("bit");
-
                     b.Property<DateTime>("StartedAt")
                         .HasColumnType("datetime2");
 
@@ -338,28 +335,6 @@ namespace eweb.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.ToTable("Lessons");
-                });
-
-            modelBuilder.Entity("eweb.Domain.Entities.Progress.UserExerciseProgress", b =>
-                {
-                    b.Property<string>("UserId")
-                        .HasColumnType("nvarchar(450)");
-
-                    b.Property<int>("ExerciseId")
-                        .HasColumnType("int");
-
-                    b.Property<int>("AdditionalAttempts")
-                        .HasColumnType("int");
-
-                    b.Property<bool>("IsFullyCompleted")
-                        .HasColumnType("bit");
-
-                    b.Property<int>("MaxCorrectTasks")
-                        .HasColumnType("int");
-
-                    b.HasKey("UserId", "ExerciseId");
-
-                    b.ToTable("UserExerciseProgresses");
                 });
 
             modelBuilder.Entity("eweb.Domain.Entities.Progress.UserExerciseTaskProgress", b =>
