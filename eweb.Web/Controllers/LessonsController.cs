@@ -285,9 +285,7 @@ public class LessonsController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ==============================
     // DELETE
-    // ==============================
 
     [Authorize(Roles = RoleNames.Admin)]
     public async Task<IActionResult> Delete(int id)

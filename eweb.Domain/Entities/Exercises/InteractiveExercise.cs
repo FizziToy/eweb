@@ -27,6 +27,13 @@ public class InteractiveExercise
         IsPublished = false;
     }
 
+    public void EnsureCanBePublished()
+    {
+        if (Tasks.Count < 3 || Tasks.Count > 5)
+            throw new InvalidOperationException(
+                "Вправа повинна мiстити 3–5 завдань перед публiкацiєю.");
+    }
+
     public void Update(string title, string? description, int order)
     {
         Title = title;
@@ -51,5 +58,19 @@ public class InteractiveExercise
     public void ClearTasks()
     {
         _tasks.Clear();
+    }
+
+    public void EnsureCanBeEdited()
+    {
+        if (IsPublished)
+            throw new InvalidOperationException(
+                "Неможливо редагувати опубліковану вправу. Спочатку скасуйте публікацію.");
+    }
+
+    public static void EnsureLessonExerciseLimit(int existingCount)
+    {
+        if (existingCount >= 2)
+            throw new InvalidOperationException(
+                "Урок не може містити більше 2 вправ.");
     }
 }

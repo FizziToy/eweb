@@ -26,6 +26,11 @@ public class ProgressCalculator : IProgressCalculator
             ? 0
             : ((double)completedTasks / totalTasks) * TaskWeight;
 
-        return Math.Round(lessonPart + questionPart + taskPart, 2);
+        var result = lessonPart + questionPart + taskPart;
+
+        result = Math.Max(0, result);
+        result = Math.Min(100, result);
+
+        return Math.Round(result, 2);
     }
 }

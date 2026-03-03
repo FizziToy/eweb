@@ -18,9 +18,8 @@ public class InteractiveExercisesController : Controller
         _context = context;
     }
 
-    // ============================
     // LIST
-    // ============================
+
     public async Task<IActionResult> Index()
     {
         var exercises = await _context.InteractiveExercises
@@ -29,9 +28,8 @@ public class InteractiveExercisesController : Controller
         return View(exercises);
     }
 
-    // ============================
     // CREATE (GET)
-    // ============================
+
     [HttpGet]
     public async Task<IActionResult> CreateFull()
     {
@@ -39,9 +37,6 @@ public class InteractiveExercisesController : Controller
         return View(new CreateInteractiveExerciseViewModel());
     }
 
-    // ============================
-    // CREATE (POST)
-    // ============================
     [HttpPost]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> CreateFull(CreateInteractiveExerciseViewModel model)
@@ -53,13 +48,16 @@ public class InteractiveExercisesController : Controller
             return View(model);
         }
 
-        // Ліміт 2 вправи на урок
         var existingCount = await _context.InteractiveExercises
             .CountAsync(e => e.LessonId == model.LessonId);
 
-        if (existingCount >= 2)
+        try
         {
-            ModelState.AddModelError("", "This lesson already has 2 exercises.");
+            InteractiveExercise.EnsureLessonExerciseLimit(existingCount);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
             return View(model);
         }
 
@@ -72,7 +70,6 @@ public class InteractiveExercisesController : Controller
             exerciseOrder
         );
 
-        // Додаємо задачі
         for (int i = 0; i < model.Tasks.Count; i++)
         {
             var taskVm = model.Tasks[i];
@@ -96,6 +93,9 @@ public class InteractiveExercisesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
+    // EDIT (GET)
+
+
     [HttpGet]
     public async Task<IActionResult> Edit(int id)
     {
@@ -106,8 +106,14 @@ public class InteractiveExercisesController : Controller
         if (exercise == null)
             return NotFound();
 
-        if (exercise.IsPublished)
-            return BadRequest("Unpublish before editing.");
+        try
+        {
+            exercise.EnsureCanBeEdited();
+        }
+        catch (InvalidOperationException ex)
+        {
+            return BadRequest(ex.Message);
+        }
 
         var model = MapToEditViewModel(exercise);
 
@@ -131,10 +137,13 @@ public class InteractiveExercisesController : Controller
         if (exercise == null)
             return NotFound();
 
-        if (exercise.IsPublished)
+        try
         {
-            ModelState.AddModelError("",
-                "Unpublish exercise before editing.");
+            exercise.EnsureCanBeEdited();
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
             return View(model);
         }
 
@@ -192,9 +201,8 @@ public class InteractiveExercisesController : Controller
         return model;
     }
 
-    // ============================
     // DELETE
-    // ============================
+
     [HttpPost]
     public async Task<IActionResult> Delete(int id)
     {
@@ -233,9 +241,8 @@ public class InteractiveExercisesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ============================
     // PUBLISH
-    // ============================
+
     [HttpPost]
     public async Task<IActionResult> Publish(int id)
     {
@@ -246,9 +253,13 @@ public class InteractiveExercisesController : Controller
         if (exercise == null)
             return NotFound();
 
-        if (exercise.Tasks.Count < 3 || exercise.Tasks.Count > 5)
+        try
         {
-            TempData["Error"] = "Exercise must contain 3–5 tasks before publishing.";
+            exercise.EnsureCanBePublished();
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
             return RedirectToAction(nameof(Index));
         }
 
@@ -258,9 +269,8 @@ public class InteractiveExercisesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ============================
     // UNPUBLISH
-    // ============================
+
     [HttpPost]
     public async Task<IActionResult> Unpublish(int id)
     {
@@ -276,9 +286,7 @@ public class InteractiveExercisesController : Controller
         return RedirectToAction(nameof(Index));
     }
 
-    // ============================
     // HELPERS
-    // ============================
     private async Task LoadAvailableLessons(int? currentLessonId = null)
     {
         var lessons = await _context.Lessons
@@ -388,22 +396,22 @@ public class InteractiveExercisesController : Controller
             {
                 options = new[]
                 {
-            new { text = task.Option1, isCorrect = task.IsOption1Correct },
-            new { text = task.Option2, isCorrect = task.IsOption2Correct },
-            new { text = task.Option3, isCorrect = task.IsOption3Correct },
-            new { text = task.Option4, isCorrect = task.IsOption4Correct }
-        }
+                    new { text = task.Option1, isCorrect = task.IsOption1Correct },
+                    new { text = task.Option2, isCorrect = task.IsOption2Correct },
+                    new { text = task.Option3, isCorrect = task.IsOption3Correct },
+                    new { text = task.Option4, isCorrect = task.IsOption4Correct }
+                }
             },
 
             ExerciseType.Reorder => new
             {
                 items = new[]
                 {
-            task.ReorderItem1,
-            task.ReorderItem2,
-            task.ReorderItem3,
-            task.ReorderItem4
-        },
+                    task.ReorderItem1,
+                    task.ReorderItem2,
+                    task.ReorderItem3,
+                    task.ReorderItem4
+                },
                 correctOrder = task.CorrectOrder
             },
 
@@ -411,22 +419,22 @@ public class InteractiveExercisesController : Controller
             {
                 pairs = new[]
                 {
-            new { left = task.Left1, right = task.Right1 },
-            new { left = task.Left2, right = task.Right2 },
-            new { left = task.Left3, right = task.Right3 },
-            new { left = task.Left4, right = task.Right4 }
-        }
+                    new { left = task.Left1, right = task.Right1 },
+                    new { left = task.Left2, right = task.Right2 },
+                    new { left = task.Left3, right = task.Right3 },
+                    new { left = task.Left4, right = task.Right4 }
+                }
             },
 
             ExerciseType.FillGaps => new
             {
                 options = new[]
                 {
-            task.GapOption1,
-            task.GapOption2,
-            task.GapOption3,
-            task.GapOption4
-        },
+                    task.GapOption1,
+                    task.GapOption2,
+                    task.GapOption3,
+                    task.GapOption4
+                },
                 correctOptionIndex = task.CorrectOptionIndex
             },
 
