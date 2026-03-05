@@ -221,4 +221,17 @@ public class LessonTests
         Assert.Throws<InvalidOperationException>(() =>
             lesson.RemoveQuestion(q.Id));
     }
+
+    [Theory]
+    [InlineData(50, true)]
+    [InlineData(70, true)]
+    [InlineData(100, true)]
+    [InlineData(49.9, false)]
+    [InlineData(30, false)]
+    public void ResultPercent_CheckIfNextLessonShouldOpen(double percent, bool expected)
+    {
+        bool canOpenNextLesson = percent >= 50;
+
+        Assert.Equal(expected, canOpenNextLesson);
+    }
 }

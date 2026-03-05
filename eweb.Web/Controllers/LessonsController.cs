@@ -198,6 +198,25 @@ public class LessonsController : Controller
         if (!isAdmin && attempt != null)
             attempt.Finish(percent);
 
+        if (!isAdmin && percent >= 50)
+        {
+            var nextLesson = await _context.Lessons
+                .Where(l => l.Number == lesson.Number + 1 && l.IsPublished)
+                .FirstOrDefaultAsync();
+
+            if (nextLesson != null)
+            {
+                var exists = await _context.UserLessonProgresses
+                    .AnyAsync(x => x.UserId == userId && x.LessonId == nextLesson.Id);
+
+                if (!exists)
+                {
+                    _context.UserLessonProgresses.Add(
+                        new UserLessonProgress(userId!, nextLesson.Id));
+                }
+            }
+        }
+
         await _context.SaveChangesAsync();
 
         if (!isAdmin)
