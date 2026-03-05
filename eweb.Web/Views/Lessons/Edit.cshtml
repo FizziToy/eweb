@@ -1,34 +1,267 @@
 ﻿@model eweb.Web.Models.Lessons.EditLessonViewModel
+@{
+    ViewData["Title"] = "Редагувати урок";
+}
 
 <h2>Редагувати урок</h2>
+<hr />
+
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+
+@if (Model.IsPublished)
+{
+    <div class="alert alert-warning">
+        Урок опублікований. Щоб внести зміни, зніміть його з публікації.
+    </div>
+}
 
 <form asp-action="Edit">
     <input type="hidden" asp-for="Id" />
 
-    <div class="form-group">
-        <label asp-for="Number"></label>
+    <div class="mb-3">
+        <label asp-for="Number" class="form-label"></label>
         <input asp-for="Number" class="form-control" />
     </div>
 
-    <div class="form-group">
-        <label asp-for="Title"></label>
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label"></label>
         <input asp-for="Title" class="form-control" />
     </div>
 
-    <div class="form-group">
-        <label asp-for="Description"></label>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label"></label>
         <input asp-for="Description" class="form-control" />
     </div>
 
-    <div class="form-group">
-        <label asp-for="Content"></label>
-        <textarea asp-for="Content" class="form-control"></textarea>
+    <div class="mb-3">
+        <label asp-for="Content" class="form-label"></label>
+        <textarea asp-for="Content" class="form-control" rows="8"></textarea>
     </div>
 
-    <div class="form-check">
+    <div class="form-check mb-3">
         <input asp-for="IsPublished" class="form-check-input" />
         <label asp-for="IsPublished" class="form-check-label"></label>
     </div>
 
-    <button type="submit" class="btn btn-primary mt-3">Зберегти</button>
+    <hr>
+    <h4>Тест</h4>
+
+    <div id="questionsContainer">
+
+        @for (int i = 0; i < Model.Questions.Count; i++)
+        {
+            <div class="card p-3 mb-3 question-block" id="question-block-@i">
+
+                <input type="hidden" name="Questions[@i].Id" value="@Model.Questions[i].Id" />
+
+                <div class="d-flex justify-content-between align-items-center mb-2">
+                    <h5 class="mb-0">Питання</h5>
+                    <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion('question-block-@i')">
+                        Видалити
+                    </button>
+                </div>
+
+                <input name="Questions[@i].QuestionText"
+                       class="form-control mb-2"
+                       value="@Model.Questions[i].QuestionText"
+                       placeholder="Текст питання" />
+
+                <div id="answers-@i">
+
+                    @for (int j = 0; j < Model.Questions[i].Answers.Count; j++)
+                    {
+                        <div class="d-flex align-items-center mb-2 answer-row">
+
+                            <input type="hidden"
+                                   name="Questions[@i].Answers[@j].Id"
+                                   value="@Model.Questions[i].Answers[j].Id" />
+
+                            @* ВИПРАВЛЕНО: чекбокс ПЕРЕД hidden, щоб "true" читалось першим *@
+                            <input type="checkbox"
+                                   value="true"
+                                   class="form-check-input me-2"
+                                   name="Questions[@i].Answers[@j].IsCorrect"
+                                   @(Model.Questions[i].Answers[j].IsCorrect ? "checked=\"checked\"" : "")
+                                   onchange="updateCorrectCheckboxes('@i')" />
+
+                            <input type="hidden"
+                                   name="Questions[@i].Answers[@j].IsCorrect"
+                                   value="false" />
+
+                            <input name="Questions[@i].Answers[@j].Text"
+                                   class="form-control me-2"
+                                   value="@Model.Questions[i].Answers[j].Text"
+                                   placeholder="Текст відповіді" />
+
+                            <button type="button"
+                                    class="btn btn-sm btn-outline-danger"
+                                    onclick="removeAnswer(this,'@i')">
+                                ✕
+                            </button>
+
+                        </div>
+                    }
+
+                </div>
+
+                <button type="button"
+                        id="addAnswerBtn-@i"
+                        class="btn btn-sm btn-outline-secondary mt-2"
+                        onclick="addAnswer('@i')">
+                    + Додати відповідь
+                </button>
+
+            </div>
+        }
+
+    </div>
+
+    <button type="button"
+            id="addQuestionBtn"
+            class="btn btn-secondary mb-3"
+            onclick="addQuestion()">
+        + Додати питання
+    </button>
+
+    <br>
+
+    <button type="submit" class="btn btn-primary">
+        Зберегти зміни
+    </button>
+
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        Назад
+    </a>
+
 </form>
+
+<script>
+
+    function getQuestionCount() {
+        return document.querySelectorAll('#questionsContainer .question-block').length;
+    }
+
+    function updateAddQuestionBtn() {
+        document.getElementById('addQuestionBtn').disabled = getQuestionCount() >= 10;
+    }
+
+    function removeQuestion(id) {
+        document.getElementById(id).remove();
+        updateAddQuestionBtn();
+    }
+
+    function addQuestion() {
+        if (getQuestionCount() >= 10) return;
+
+        const qi = getQuestionCount();
+
+        const html = `
+        <div class="card p-3 mb-3 question-block" id="question-block-${qi}">
+            <input type="hidden" name="Questions[${qi}].Id" value="0"/>
+            <div class="d-flex justify-content-between mb-2">
+                <h5>Питання</h5>
+                <button type="button" class="btn btn-sm btn-danger"
+                        onclick="removeQuestion('question-block-${qi}')">
+                    Видалити
+                </button>
+            </div>
+            <input name="Questions[${qi}].QuestionText"
+                   class="form-control mb-2"
+                   placeholder="Текст питання"/>
+            <div id="answers-${qi}"></div>
+            <button type="button"
+                    id="addAnswerBtn-${qi}"
+                    class="btn btn-sm btn-outline-secondary mt-2"
+                    onclick="addAnswer('${qi}')">
+                + Додати відповідь
+            </button>
+        </div>`;
+
+        document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
+        addAnswer(qi);
+        addAnswer(qi);
+        updateAddQuestionBtn();
+    }
+
+    function getAnswerCount(qi) {
+        return document.querySelectorAll(`#answers-${qi} .answer-row`).length;
+    }
+
+    function getCorrectCount(qi) {
+        return document.querySelectorAll(`#answers-${qi} input[type=checkbox]:checked`).length;
+    }
+
+    function updateAddAnswerBtn(qi) {
+        const btn = document.getElementById(`addAnswerBtn-${qi}`);
+        if (btn) btn.disabled = getAnswerCount(qi) >= 9;
+    }
+
+    function updateCorrectCheckboxes(qi) {
+        const count = getCorrectCount(qi);
+        document.querySelectorAll(`#answers-${qi} input[type=checkbox]`).forEach(cb => {
+            if (!cb.checked) cb.disabled = count >= 3;
+        });
+    }
+
+    function addAnswer(qi) {
+        if (getAnswerCount(qi) >= 9) return;
+
+        const ai = getAnswerCount(qi);
+
+        // ВИПРАВЛЕНО: чекбокс ПЕРЕД hidden IsCorrect
+        const html = `
+        <div class="d-flex align-items-center mb-2 answer-row">
+            <input type="hidden"
+                   name="Questions[${qi}].Answers[${ai}].Id"
+                   value="0"/>
+            <input type="checkbox"
+                   value="true"
+                   class="form-check-input me-2"
+                   name="Questions[${qi}].Answers[${ai}].IsCorrect"
+                   onchange="updateCorrectCheckboxes('${qi}')"/>
+            <input type="hidden"
+                   name="Questions[${qi}].Answers[${ai}].IsCorrect"
+                   value="false"/>
+            <input name="Questions[${qi}].Answers[${ai}].Text"
+                   class="form-control me-2"
+                   placeholder="Текст відповіді"/>
+            <button type="button"
+                    class="btn btn-sm btn-outline-danger"
+                    onclick="removeAnswer(this,'${qi}')">
+                ✕
+            </button>
+        </div>`;
+
+        document.getElementById(`answers-${qi}`).insertAdjacentHTML('beforeend', html);
+        updateAddAnswerBtn(qi);
+        updateCorrectCheckboxes(qi);
+    }
+
+    function removeAnswer(btn, qi) {
+        btn.closest('.answer-row').remove();
+        reindexAnswers(qi);
+        updateAddAnswerBtn(qi);
+        updateCorrectCheckboxes(qi);
+    }
+
+    function reindexAnswers(qi) {
+        document.querySelectorAll(`#answers-${qi} .answer-row`).forEach((row, ai) => {
+
+            // Порядок у рядку: hidden(Id), checkbox(IsCorrect), hidden(IsCorrect=false), input(Text)
+            const hiddenInputs    = row.querySelectorAll('input[type=hidden]');
+            const idInput         = hiddenInputs[0]; // .Id
+            const isCorrectHidden = hiddenInputs[1]; // .IsCorrect = false
+
+            const cb  = row.querySelector('input[type=checkbox]');
+            const txt = row.querySelector('input:not([type=checkbox]):not([type=hidden])');
+
+            if (idInput)         idInput.name         = `Questions[${qi}].Answers[${ai}].Id`;
+            if (cb)              cb.name              = `Questions[${qi}].Answers[${ai}].IsCorrect`;
+            if (isCorrectHidden) isCorrectHidden.name = `Questions[${qi}].Answers[${ai}].IsCorrect`;
+            if (txt)             txt.name             = `Questions[${qi}].Answers[${ai}].Text`;
+        });
+    }
+
+    updateAddQuestionBtn();
+
+</script>

@@ -3,6 +3,7 @@ using System;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 using eweb.Infrastructure.Data;
 
@@ -11,9 +12,11 @@ using eweb.Infrastructure.Data;
 namespace eweb.Infrastructure.Migrations
 {
     [DbContext(typeof(ApplicationDbContext))]
-    partial class ApplicationDbContextModelSnapshot : ModelSnapshot
+    [Migration("20260305102332_AddLessonTestAttempts")]
+    partial class AddLessonTestAttempts
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        /// <inheritdoc />
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -618,13 +621,11 @@ namespace eweb.Infrastructure.Migrations
 
             modelBuilder.Entity("eweb.Domain.Entities.TheoryQuestion", b =>
                 {
-                    b.HasOne("eweb.Domain.Entities.Lesson", "Lesson")
+                    b.HasOne("eweb.Domain.Entities.Lesson", null)
                         .WithMany("Questions")
                         .HasForeignKey("LessonId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
-
-                    b.Navigation("Lesson");
                 });
 
             modelBuilder.Entity("eweb.Domain.Entities.Attempts.ExerciseAttempt", b =>

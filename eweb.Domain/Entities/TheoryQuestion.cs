@@ -1,5 +1,4 @@
 ﻿namespace eweb.Domain.Entities;
-
 public class TheoryQuestion
 {
     private const int MinAnswers = 2;
@@ -16,45 +15,73 @@ public class TheoryQuestion
 
     public int LessonId { get; private set; }
 
+    public Lesson Lesson { get; private set; } = null!;
+
     public IReadOnlyCollection<AnswerOption> AnswerOptions => _answerOptions.AsReadOnly();
+
     private TheoryQuestion() { }
 
     public TheoryQuestion(string questionText, int lessonId)
     {
         if (string.IsNullOrWhiteSpace(questionText))
-            throw new ArgumentException("Question text cannot be empty.");
+            throw new ArgumentException("Текст питання не може бути порожнім.");
 
-        QuestionText = questionText;
+        QuestionText = questionText.Trim();
         LessonId = lessonId;
     }
 
     public void AddAnswerOption(string text, bool isCorrect)
     {
         if (_answerOptions.Count >= MaxAnswers)
-            throw new InvalidOperationException($"Cannot have more than {MaxAnswers} answers.");
+            throw new InvalidOperationException(
+                $"Питання не може мати більше {MaxAnswers} відповідей."
+            );
 
-        _answerOptions.Add(new AnswerOption(text, isCorrect));
+        var option = new AnswerOption(text, isCorrect);
+
+        _answerOptions.Add(option);
+    }
+
+    public void RemoveAnswerOption(int answerId)
+    {
+        var option = _answerOptions.FirstOrDefault(a => a.Id == answerId);
+
+        if (option == null)
+            throw new InvalidOperationException("Відповідь не знайдено.");
+
+        _answerOptions.Remove(option);
+
+        Validate();
     }
 
     public void Validate()
     {
         if (_answerOptions.Count < MinAnswers)
-            throw new InvalidOperationException($"A question must have at least {MinAnswers} answers.");
+            throw new InvalidOperationException(
+                $"Питання повинно мати мінімум {MinAnswers} відповіді."
+            );
 
         if (_answerOptions.Count > MaxAnswers)
-            throw new InvalidOperationException($"A question cannot have more than {MaxAnswers} answers.");
+            throw new InvalidOperationException(
+                $"Питання не може мати більше {MaxAnswers} відповідей."
+            );
 
         var correctCount = _answerOptions.Count(a => a.IsCorrect);
+        var incorrectCount = _answerOptions.Count - correctCount;
 
         if (correctCount < MinCorrectAnswers)
-            throw new InvalidOperationException($"At least {MinCorrectAnswers} correct answer is required.");
+            throw new InvalidOperationException(
+                $"Має бути мінімум {MinCorrectAnswers} правильна відповідь."
+            );
 
         if (correctCount > MaxCorrectAnswers)
-            throw new InvalidOperationException($"No more than {MaxCorrectAnswers} correct answers are allowed.");
-
-        var incorrectCount = _answerOptions.Count(a => !a.IsCorrect);
+            throw new InvalidOperationException(
+                $"Не більше {MaxCorrectAnswers} правильних відповідей."
+            );
 
         if (incorrectCount < 1)
-            throw new InvalidOperationException("At least one answer must be incorrect.");
+            throw new InvalidOperationException(
+                "Має бути хоча б одна неправильна відповідь."
+            );
     }
 }

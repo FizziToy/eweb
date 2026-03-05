@@ -1,7 +1,9 @@
-﻿@model eweb.Web.Models.Lessons.LessonDetailsViewModel
+﻿@using eweb.Domain.Constants
+@model eweb.Web.Models.Lessons.LessonDetailsViewModel
 
 @{
     ViewData["Title"] = "Урок";
+    bool isAdmin = User.IsInRole(RoleNames.Admin);
 }
 
 <h2>Урок №@Model.Number</h2>
@@ -23,19 +25,22 @@
             @Model.Content
         </div>
 
-        <hr />
+        @if (isAdmin)
+        {
+            <hr />
 
-        <p>
-            <strong>Статус:</strong>
-            @if (Model.IsPublished)
-            {
-                <span class="text-success">Опубліковано</span>
-            }
-            else
-            {
-                <span class="text-danger">Чернетка</span>
-            }
-        </p>
+            <p>
+                <strong>Статус:</strong>
+                @if (Model.IsPublished)
+                {
+                    <span class="text-success">Опубліковано</span>
+                }
+                else
+                {
+                    <span class="text-danger">Чернетка</span>
+                }
+            </p>
+        }
 
         <p>
             <strong>Створено:</strong>
@@ -45,50 +50,92 @@
     </div>
 </div>
 
+<hr />
+
 @if (Model.Questions.Any())
 {
     <h4>Тест</h4>
 
-    <form method="post">
-        <input type="hidden" asp-for="LessonId" />
+    @if (!isAdmin)
+    {
+        <p>
+            <strong>Спроби:</strong> @Model.AttemptsCount / 10
+        </p>
+    }
 
-        @for (int i = 0; i < Model.Questions.Count; i++)
-        {
-            <div class="card mb-3">
-                <div class="card-body">
+    @if (Model.AttemptsExceeded && !isAdmin)
+    {
+        <div class="alert alert-danger">
+            Ви використали всі 10 спроб тесту.
+        </div>
+    }
+    else
+    {
+        <form method="post">
 
-                    <input type="hidden" asp-for="Questions[i].QuestionId" />
+            <input type="hidden" asp-for="LessonId" />
 
-                    <h6>
-                        @(i + 1). @Model.Questions[i].QuestionText
-                    </h6>
+            @for (int i = 0; i < Model.Questions.Count; i++)
+            {
+                <div class="card mb-3">
+                    <div class="card-body">
 
-                    @for (int j = 0; j < Model.Questions[i].Answers.Count; j++)
-                    {
-                        <div class="form-check">
+                        <input type="hidden"
+                               asp-for="Questions[i].QuestionId" />
 
-                            <input type="hidden"
-                                   asp-for="Questions[i].Answers[j].AnswerId" />
+                        <h6>
+                            @(i + 1). @Model.Questions[i].QuestionText
+                        </h6>
 
-                            <input class="form-check-input"
-                                   asp-for="Questions[i].Answers[j].IsSelected"
-                                   type="checkbox" />
+                        @for (int j = 0; j < Model.Questions[i].Answers.Count; j++)
+                        {
+                            var answer = Model.Questions[i].Answers[j];
 
-                            <label class="form-check-label">
-                                @Model.Questions[i].Answers[j].Text
-                            </label>
+                            <div class="form-check">
 
-                        </div>
-                    }
+                                <input type="hidden"
+                                       asp-for="Questions[i].Answers[j].AnswerId" />
 
+                                <input class="form-check-input"
+                                       asp-for="Questions[i].Answers[j].IsSelected"
+                                       type="checkbox" />
+
+                                <label class="form-check-label">
+
+                                    @answer.Text
+
+                                    @if (isAdmin || Model.ShowCorrectAnswers)
+                                    {
+                                        if (answer.IsSelected)
+                                        {
+                                            <span class="text-success">
+                                                ✔
+                                            </span>
+                                        }
+                                    }
+
+                                </label>
+
+                            </div>
+                        }
+
+                    </div>
                 </div>
-            </div>
-        }
+            }
 
-        <button type="submit" class="btn btn-success">
-            Перевірити
-        </button>
-    </form>
+            @if (Model.AttemptsExceeded)
+            {
+                <button type="submit" disabled style="opacity:0.5; cursor:not-allowed;">
+                    Спроби вичерпано
+                </button>
+            }
+            else
+            {
+                <button type="submit">Відправити</button>
+            }
+
+        </form>
+    }
 
     @if (Model.ResultPercent != null)
     {
@@ -102,6 +149,42 @@ else
 {
     <div class="alert alert-secondary">
         До цього уроку ще немає тесту.
+    </div>
+}
+
+@if (Model.ShowCorrectAnswersModal)
+{
+    <button type="button"
+            onclick="document.getElementById('correctAnswersModal').style.display='flex'"
+            style="margin-top:1rem;">
+        Переглянути правильні відповіді
+    </button>
+
+    <div id="correctAnswersModal"
+         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+
+        <div style="background:#fff; padding:2rem; border-radius:8px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto;">
+
+            <h4>Правильні відповіді</h4>
+
+            @foreach (var q in Model.Questions)
+            {
+                <p><strong>@q.QuestionText</strong></p>
+
+                <ul>
+                    @foreach (var a in q.Answers.Where(a => a.IsSelected))
+                    {
+                        <li>@a.Text</li>
+                    }
+                </ul>
+            }
+
+            <button type="button"
+                    onclick="document.getElementById('correctAnswersModal').style.display='none'">
+                Закрити
+            </button>
+
+        </div>
     </div>
 }
 

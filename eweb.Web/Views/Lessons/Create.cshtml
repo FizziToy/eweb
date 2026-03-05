@@ -1,55 +1,132 @@
 ﻿@model eweb.Web.Models.Lessons.CreateLessonViewModel
-
 @{
-    ViewData["Title"] = "Create";
+    ViewData["Title"] = "Створити урок";
 }
-
-<h1>Create</h1>
-
-<h4>Lesson</h4>
-<hr />
-<div class="row">
-    <div class="col-md-4">
-        <form asp-action="Create">
-            <div asp-validation-summary="ModelOnly" class="text-danger"></div>
-
-            <div class="form-group">
-                <label asp-for="Number" class="control-label"></label>
-                <input asp-for="Number" class="form-control" />
-                <span asp-validation-for="Number" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Title" class="control-label"></label>
-                <input asp-for="Title" class="form-control" />
-                <span asp-validation-for="Title" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Description" class="control-label"></label>
-                <input asp-for="Description" class="form-control" />
-                <span asp-validation-for="Description" class="text-danger"></span>
-            </div>
-
-            <div class="form-group">
-                <label asp-for="Content" class="control-label"></label>
-                <textarea asp-for="Content" class="form-control"></textarea>
-                <span asp-validation-for="Content" class="text-danger"></span>
-            </div>
-
-            <div class="form-group mt-2">
-                <input type="submit" value="Create" class="btn btn-primary" />
-            </div>
-        </form>
+<h2>Створити урок</h2>
+<div asp-validation-summary="All" class="text-danger mb-3"></div>
+<form asp-action="Create">
+    <div class="mb-3">
+        <label asp-for="Number" class="form-label">Номер уроку</label>
+        <input asp-for="Number" class="form-control" />
     </div>
-</div>
+    <div class="mb-3">
+        <label asp-for="Title" class="form-label">Назва</label>
+        <input asp-for="Title" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Description" class="form-label">Короткий опис</label>
+        <input asp-for="Description" class="form-control" />
+    </div>
+    <div class="mb-3">
+        <label asp-for="Content" class="form-label">Текст уроку</label>
+        <textarea asp-for="Content" class="form-control" rows="8"></textarea>
+    </div>
+    <div class="form-check mb-3">
+        <input asp-for="IsPublished" class="form-check-input" />
+        <label asp-for="IsPublished" class="form-check-label">Опублікувати урок</label>
+    </div>
+    <hr />
+    <h4>Тест</h4>
+    <div id="questionsContainer"></div>
+    <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3" onclick="addQuestion()">
+        + Додати питання
+    </button>
+    <br />
+    <button type="submit" class="btn btn-primary">Створити урок</button>
+    <a asp-action="Index" class="btn btn-outline-secondary">Назад</a>
+</form>
 
-<div>
-    <a asp-action="Index">Back to List</a>
-</div>
+<script>
+    let questionIndex = 0;
 
-@section Scripts {
-    @{
-        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    function getQuestionCount() {
+        return document.querySelectorAll('#questionsContainer .question-block').length;
     }
-}
+
+    function updateAddQuestionBtn() {
+        document.getElementById('addQuestionBtn').disabled = getQuestionCount() >= 10;
+    }
+
+    function addQuestion() {
+        if (getQuestionCount() >= 10) return;
+        const qi = questionIndex;
+        const html = `
+        <div class="card p-3 mb-3 question-block" id="question-${qi}">
+            <div class="d-flex justify-content-between align-items-center mb-2">
+                <h5 class="mb-0">Питання</h5>
+                <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion(${qi})">Видалити</button>
+            </div>
+            <input name="Questions[${qi}].QuestionText" class="form-control mb-2" placeholder="Текст питання" />
+            <div id="answers-${qi}"></div>
+            <button type="button" id="addAnswerBtn-${qi}" class="btn btn-sm btn-outline-secondary mt-2" onclick="addAnswer(${qi})">
+                + Додати відповідь
+            </button>
+        </div>`;
+        document.getElementById('questionsContainer').insertAdjacentHTML('beforeend', html);
+        addAnswer(qi);
+        addAnswer(qi);
+        questionIndex++;
+        updateAddQuestionBtn();
+    }
+
+    function removeQuestion(qi) {
+        document.getElementById(`question-${qi}`).remove();
+        updateAddQuestionBtn();
+    }
+
+    function getAnswerCount(qi) {
+        return document.querySelectorAll(`#answers-${qi} .answer-row`).length;
+    }
+
+    function getCorrectCount(qi) {
+        return document.querySelectorAll(`#answers-${qi} input[type=checkbox]:checked`).length;
+    }
+
+    function updateAddAnswerBtn(qi) {
+        const btn = document.getElementById(`addAnswerBtn-${qi}`);
+        if (btn) btn.disabled = getAnswerCount(qi) >= 9;
+    }
+
+    function updateCorrectCheckboxes(qi) {
+        const count = getCorrectCount(qi);
+        document.querySelectorAll(`#answers-${qi} input[type=checkbox]`).forEach(cb => {
+            if (!cb.checked) cb.disabled = count >= 3;
+        });
+    }
+
+    function addAnswer(qi) {
+        if (getAnswerCount(qi) >= 9) return;
+        const ai = getAnswerCount(qi);
+        const html = `
+        <div class="d-flex align-items-center mb-2 answer-row">
+            <input type="checkbox"
+            class="form-check-input me-2"
+            value="true"
+            name="Questions[${qi}].Answers[${ai}].IsCorrect"
+            onchange="updateCorrectCheckboxes(${qi})" />
+            <input name="Questions[${qi}].Answers[${ai}].Text"
+                   class="form-control me-2"
+                   placeholder="Текст відповіді" />
+            <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeAnswer(this, ${qi})">✕</button>
+        </div>`;
+        document.getElementById(`answers-${qi}`).insertAdjacentHTML('beforeend', html);
+        updateAddAnswerBtn(qi);
+        updateCorrectCheckboxes(qi);
+    }
+
+    function removeAnswer(btn, qi) {
+        btn.closest('.answer-row').remove();
+        reindexAnswers(qi);
+        updateAddAnswerBtn(qi);
+        updateCorrectCheckboxes(qi);
+    }
+
+    function reindexAnswers(qi) {
+        document.querySelectorAll(`#answers-${qi} .answer-row`).forEach((row, ai) => {
+            const cb = row.querySelector('input[type=checkbox]');
+            const txt = row.querySelector('input[type=text], input:not([type=checkbox])');
+            if (cb) cb.name = `Questions[${qi}].Answers[${ai}].IsCorrect`;
+            if (txt) txt.name = `Questions[${qi}].Answers[${ai}].Text`;
+        });
+    }
+</script>

@@ -18,6 +18,14 @@ public class LessonDetailsViewModel
 
     public double? ResultPercent { get; set; }
 
+    public int AttemptsCount { get; set; }
+
+    public bool ShowCorrectAnswers { get; set; }
+
+    public bool AttemptsExceeded { get; set; }
+
+    public bool ShowCorrectAnswersModal { get; set; }
+
     public List<QuestionVm> Questions { get; set; } = new();
 
     public class QuestionVm

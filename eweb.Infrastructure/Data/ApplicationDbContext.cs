@@ -5,7 +5,6 @@ using eweb.Domain.Entities.Progress;
 using eweb.Infrastructure.Identity;
 using Microsoft.AspNetCore.Identity.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore;
-using System.Reflection.Emit;
 
 namespace eweb.Infrastructure.Data;
 
@@ -19,6 +18,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<UserExerciseTaskProgress> UserExerciseTaskProgresses { get; set; }
     public DbSet<InteractiveExercise> InteractiveExercises { get; set; }
     public DbSet<ExerciseTask> ExerciseTasks { get; set; }
+    public DbSet<LessonTestAttempt> LessonTestAttempts { get; set; }
     public DbSet<ExerciseAttempt> ExerciseAttempts { get; set; }
     public DbSet<TaskAttempt> TaskAttempts { get; set; }
     public DbSet<UserExerciseProgress> UserExerciseProgresses { get; set; }
@@ -27,28 +27,36 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     {
         base.OnModelCreating(builder);
 
-        // Lesson - TheoryQuestion (1 : many)
+        builder.Entity<Lesson>().HasKey(l => l.Id);
+        builder.Entity<TheoryQuestion>().HasKey(q => q.Id);
+        builder.Entity<AnswerOption>().HasKey(a => a.Id);
+
         builder.Entity<Lesson>()
             .HasMany(l => l.Questions)
-            .WithOne()
-            .HasForeignKey("LessonId")
+            .WithOne(q => q.Lesson)
+            .HasForeignKey(q => q.LessonId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // TheoryQuestion - AnswerOption (1 : many)
+        builder.Entity<Lesson>()
+            .Navigation(nameof(Lesson.Questions))
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.Entity<TheoryQuestion>()
             .HasMany(q => q.AnswerOptions)
             .WithOne()
-            .HasForeignKey("TheoryQuestionId")
+            .HasForeignKey(a => a.TheoryQuestionId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // Lesson → InteractiveExercise (1 : many)
+        builder.Entity<TheoryQuestion>()
+            .Navigation(nameof(TheoryQuestion.AnswerOptions))
+            .UsePropertyAccessMode(PropertyAccessMode.Field);
+
         builder.Entity<InteractiveExercise>()
             .HasOne<Lesson>()
             .WithMany()
             .HasForeignKey(e => e.LessonId)
             .OnDelete(DeleteBehavior.Cascade);
 
-        // InteractiveExercise → ExerciseTask (1 : many)
         builder.Entity<ExerciseTask>()
             .HasOne<InteractiveExercise>()
             .WithMany(e => e.Tasks)
@@ -64,13 +72,13 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         builder.Entity<UserExerciseTaskProgress>()
             .HasKey(x => new { x.UserId, x.ExerciseTaskId });
 
+        builder.Entity<UserExerciseProgress>()
+            .HasKey(x => new { x.UserId, x.ExerciseId });
+
         builder.Entity<ExerciseAttempt>()
             .HasMany(e => e.TaskAttempts)
             .WithOne()
             .HasForeignKey(t => t.ExerciseAttemptId)
             .OnDelete(DeleteBehavior.Cascade);
-
-        builder.Entity<UserExerciseProgress>()
-            .HasKey(x => new { x.UserId, x.ExerciseId });
     }
 }

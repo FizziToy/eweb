@@ -7,16 +7,17 @@ public class AnswerOption
     public string Text { get; private set; } = null!;
 
     public bool IsCorrect { get; private set; }
+
     public int TheoryQuestionId { get; private set; }
 
-    private AnswerOption() { } 
+    private AnswerOption() { }
 
     public AnswerOption(string text, bool isCorrect)
     {
         if (string.IsNullOrWhiteSpace(text))
-            throw new ArgumentException("Answer text cannot be empty.");
+            throw new ArgumentException("Текст відповіді не може бути порожнім.", nameof(text));
 
-        Text = text;
+        Text = text.Trim();
         IsCorrect = isCorrect;
     }
 }
