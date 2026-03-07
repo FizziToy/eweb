@@ -8,24 +8,32 @@
 
 <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-@if (Model.IsPublished)
-{
-    <div class="alert alert-warning">
-        Урок опублікований. Щоб внести зміни, зніміть його з публікації.
-    </div>
-}
-
 <form asp-action="Edit">
     <input type="hidden" asp-for="Id" />
 
     <div class="mb-3">
         <label asp-for="Number" class="form-label"></label>
-        <input asp-for="Number" class="form-control" />
+        <input asp-for="Number"
+               type="number"
+               min="1"
+               max="@Model.MaxNumber"
+               step="1"
+               class="form-control"
+               oninput="limitNumber(this)" />
     </div>
 
     <div class="mb-3">
         <label asp-for="Title" class="form-label"></label>
         <input asp-for="Title" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+        <label asp-for="CategoryId" class="form-label">Категорія</label>
+
+        <select asp-for="CategoryId"
+                asp-items="Model.Categories"
+                class="form-control">
+        </select>
     </div>
 
     <div class="mb-3">
@@ -76,7 +84,6 @@
                                    name="Questions[@i].Answers[@j].Id"
                                    value="@Model.Questions[i].Answers[j].Id" />
 
-                            @* ВИПРАВЛЕНО: чекбокс ПЕРЕД hidden, щоб "true" читалось першим *@
                             <input type="checkbox"
                                    value="true"
                                    class="form-check-input me-2"
@@ -260,6 +267,18 @@
             if (isCorrectHidden) isCorrectHidden.name = `Questions[${qi}].Answers[${ai}].IsCorrect`;
             if (txt)             txt.name             = `Questions[${qi}].Answers[${ai}].Text`;
         });
+    }
+
+        function limitNumber(input) {
+
+        const min = parseInt(input.min);
+        const max = parseInt(input.max);
+        let value = parseInt(input.value);
+
+        if (isNaN(value)) return;
+
+        if (value < min) input.value = min;
+        if (value > max) input.value = max;
     }
 
     updateAddQuestionBtn();

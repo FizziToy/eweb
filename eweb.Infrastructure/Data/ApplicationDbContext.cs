@@ -13,6 +13,7 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
     public DbSet<Lesson> Lessons { get; set; }
     public DbSet<TheoryQuestion> TheoryQuestions { get; set; } = null!;
     public DbSet<AnswerOption> AnswerOptions { get; set; } = null!;
+    public DbSet<LessonCategory> LessonCategories { get; set; } = null!;
     public DbSet<UserLessonProgress> UserLessonProgresses { get; set; }
     public DbSet<UserQuestionProgress> UserQuestionProgresses { get; set; }
     public DbSet<UserExerciseTaskProgress> UserExerciseTaskProgresses { get; set; }

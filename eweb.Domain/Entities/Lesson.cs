@@ -20,19 +20,27 @@ public class Lesson
 
     public DateOnly CreatedAt { get; private set; }
 
+    public int CategoryId { get; private set; }
+
+    public LessonCategory Category { get; private set; } = null!;
+
     public IReadOnlyCollection<TheoryQuestion> Questions => _questions.AsReadOnly();
 
     private Lesson() { }
 
-    public Lesson(int number, string title, string description, string content)
+    public Lesson(int number, string title, string description, string content, int categoryId)
     {
         if (number <= 0)
             throw new ArgumentException("Номер уроку має бути більший за 0.");
+
+        if (categoryId <= 0)
+            throw new ArgumentException("Категорія не задана.");
 
         Number = number;
         Title = title?.Trim() ?? string.Empty;
         Description = description?.Trim() ?? string.Empty;
         Content = content?.Trim() ?? string.Empty;
+        CategoryId = categoryId;
 
         CreatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
         IsPublished = false;
@@ -46,17 +54,22 @@ public class Lesson
             );
     }
 
-    public void Update(int number, string title, string description, string content)
+    public void Update(int number, string title, string description, string content, int categoryId)
     {
         EnsureEditable();
 
         if (number <= 0)
             throw new ArgumentException("Номер уроку має бути більший за 0.");
+       
+        if (categoryId <= 0)
+            throw new ArgumentException("Категорія не задана.");
+
 
         Number = number;
         Title = title?.Trim() ?? string.Empty;
         Description = description?.Trim() ?? string.Empty;
         Content = content?.Trim() ?? string.Empty;
+        CategoryId = categoryId;
     }
 
     public void AddQuestion(TheoryQuestion question)
@@ -113,5 +126,23 @@ public class Lesson
             throw new InvalidOperationException("Урок вже не опублікований.");
 
         IsPublished = false;
+    }
+
+    public void SetNumber(int number)
+    {
+        if (number <= 0)
+            throw new ArgumentException("Номер уроку має бути більший за нуль.");
+
+        Number = number;
+    }
+
+    public void SetCategory(int categoryId)
+    {
+        EnsureEditable();
+
+        if (categoryId <= 0)
+            throw new ArgumentException("Категорія не задана.");
+
+        CategoryId = categoryId;
     }
 }

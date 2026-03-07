@@ -346,6 +346,9 @@ namespace eweb.Infrastructure.Migrations
 
                     SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
 
+                    b.Property<int>("CategoryId")
+                        .HasColumnType("int");
+
                     b.Property<string>("Content")
                         .IsRequired()
                         .HasColumnType("nvarchar(max)");
@@ -369,7 +372,26 @@ namespace eweb.Infrastructure.Migrations
 
                     b.HasKey("Id");
 
+                    b.HasIndex("CategoryId");
+
                     b.ToTable("Lessons");
+                });
+
+            modelBuilder.Entity("eweb.Domain.Entities.LessonCategory", b =>
+                {
+                    b.Property<int>("Id")
+                        .ValueGeneratedOnAdd()
+                        .HasColumnType("int");
+
+                    SqlServerPropertyBuilderExtensions.UseIdentityColumn(b.Property<int>("Id"));
+
+                    b.Property<string>("Name")
+                        .IsRequired()
+                        .HasColumnType("nvarchar(max)");
+
+                    b.HasKey("Id");
+
+                    b.ToTable("LessonCategories");
                 });
 
             modelBuilder.Entity("eweb.Domain.Entities.Progress.UserExerciseProgress", b =>
@@ -616,6 +638,17 @@ namespace eweb.Infrastructure.Migrations
                         .IsRequired();
                 });
 
+            modelBuilder.Entity("eweb.Domain.Entities.Lesson", b =>
+                {
+                    b.HasOne("eweb.Domain.Entities.LessonCategory", "Category")
+                        .WithMany("Lessons")
+                        .HasForeignKey("CategoryId")
+                        .OnDelete(DeleteBehavior.Cascade)
+                        .IsRequired();
+
+                    b.Navigation("Category");
+                });
+
             modelBuilder.Entity("eweb.Domain.Entities.TheoryQuestion", b =>
                 {
                     b.HasOne("eweb.Domain.Entities.Lesson", "Lesson")
@@ -640,6 +673,11 @@ namespace eweb.Infrastructure.Migrations
             modelBuilder.Entity("eweb.Domain.Entities.Lesson", b =>
                 {
                     b.Navigation("Questions");
+                });
+
+            modelBuilder.Entity("eweb.Domain.Entities.LessonCategory", b =>
+                {
+                    b.Navigation("Lessons");
                 });
 
             modelBuilder.Entity("eweb.Domain.Entities.TheoryQuestion", b =>

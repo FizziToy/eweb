@@ -7,6 +7,8 @@ public class UserQuestionProgress
 
     public DateTime CompletedAt { get; private set; }
 
+    public TheoryQuestion Question { get; private set; } = null!;
+
     private UserQuestionProgress() { }
 
     public UserQuestionProgress(string userId, int questionId)

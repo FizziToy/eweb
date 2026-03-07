@@ -1,4 +1,6 @@
-﻿namespace eweb.Web.Models.Lessons;
+﻿using Microsoft.AspNetCore.Mvc.Rendering;
+
+namespace eweb.Web.Models.Lessons;
 
 public class CreateLessonViewModel
 {
@@ -10,9 +12,14 @@ public class CreateLessonViewModel
 
     public string Content { get; set; } = string.Empty;
 
+    public int CategoryId { get; set; }
+
     public bool IsPublished { get; set; }
 
+    public int MaxNumber { get; set; }
+
     public List<QuestionInputModel> Questions { get; set; } = new();
+    public IEnumerable<SelectListItem>? Categories { get; set; }
 }
 
 public class QuestionInputModel

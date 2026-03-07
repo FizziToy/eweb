@@ -1,8 +1,116 @@
-﻿@{
-    ViewData["Title"] = "Home Page";
+﻿@model eweb.Web.Models.Home.HomeViewModel
+
+@{
+    ViewData["Title"] = "Головна";
 }
 
-<div class="text-center">
-    <h1 class="display-4">Welcome</h1>
-    <p>Learn about <a href="https://learn.microsoft.com/aspnet/core">building Web apps with ASP.NET Core</a>.</p>
+<div class="text-center mb-5">
+
+    <h1 class="fw-bold display-5">
+        Центр вивчення C#
+    </h1>
+
+    <p class="text-muted">
+        Вивчайте C# від основ
+    </p>
+
+</div>
+
+<div class="container">
+
+    <div class="row g-4">
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+
+                <div class="d-flex justify-content-between">
+
+                    <div>
+                        <div class="text-muted small">
+                            Відкриті уроки
+                        </div>
+
+                        <h2 class="fw-bold">
+                            @Model.OpenLessons/@Model.TotalLessons
+                        </h2>
+                    </div>
+
+                    <i class="bi bi-book dashboard-icon"></i>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+
+                <div class="d-flex justify-content-between">
+
+                    <div>
+                        <div class="text-muted small">
+                            Розвʼязані вправи
+                        </div>
+
+                        <h2 class="fw-bold">
+                            @Model.ExercisesSolved
+                        </h2>
+                    </div>
+
+                    <i class="bi bi-code-slash dashboard-icon"></i>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+
+                <div class="d-flex justify-content-between">
+
+                    <div>
+                        <div class="text-muted small">
+                            Отримані зірки
+                        </div>
+
+                        <h2 class="fw-bold">
+                            @Model.StarsEarned/@Model.StarsTotal
+                        </h2>
+                    </div>
+
+                    <i class="bi bi-star dashboard-icon"></i>
+
+                </div>
+
+            </div>
+        </div>
+
+
+        <div class="col-md-3">
+            <div class="dashboard-card">
+
+                <div class="d-flex justify-content-between">
+
+                    <div>
+                        <div class="text-muted small">
+                            Прогрес
+                        </div>
+
+                        <h2 class="fw-bold">
+                            @Model.ProgressPercent %
+                        </h2>
+                    </div>
+
+                    <i class="bi bi-graph-up-arrow dashboard-icon"></i>
+
+                </div>
+
+            </div>
+        </div>
+
+    </div>
+
 </div>

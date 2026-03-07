@@ -1,0 +1,177 @@
+﻿@model eweb.Web.Models.Analytics.AnalyticsViewModel
+
+@{
+    ViewData["Title"] = "Аналітика";
+}
+
+<h2 class="mb-4">Аналітика навчання</h2>
+
+<hr />
+
+<h4 class="mb-3">Успішність тестів та час проходження</h4>
+
+<div class="d-flex justify-content-center mb-4">
+    <div style="width:800px; height:350px;">
+        <canvas id="dailyChart"></canvas>
+    </div>
+</div>
+
+<hr />
+
+@if (Model.WeakestCategory != null)
+{
+    <div class="alert alert-warning">
+        ⚠ Найменше правильних відповідей у темі:
+        <strong>@Model.WeakestCategory</strong>
+    </div>
+}
+
+<h4 class="mb-3">Статистика по темах</h4>
+
+<table class="table table-striped">
+    <thead>
+        <tr>
+            <th>Категорія</th>
+            <th>Правильних</th>
+            <th>Всього</th>
+            <th>Успішність</th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var stat in Model.CategoryStats)
+        {
+            var weak = stat.CategoryName == Model.WeakestCategory;
+
+            <tr class="@(weak ? "table-danger" : "")">
+                <td>@stat.CategoryName</td>
+                <td>@stat.CorrectAnswers</td>
+                <td>@stat.TotalAnswers</td>
+                <td>@Math.Round(stat.SuccessPercent, 1)%</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+<a asp-controller="Lessons"
+   asp-action="Index"
+   class="btn btn-outline-secondary mt-3">
+    Назад
+</a>
+
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+    const labels = [
+    @foreach (var d in Model.DailyStats)
+    {
+            <text>'@d.Date',</text>
+    }
+    ];
+
+    const results = [
+    @foreach (var d in Model.DailyStats)
+    {
+            <text>@Math.Round(d.AverageResult, 1),</text>
+    }
+    ];
+
+       const times = [
+    @foreach (var d in Model.DailyStats)
+    {
+            <text>@Math.Round(d.AverageTimeSeconds * 1000, 0),</text>
+    }
+    ];
+
+    const attempts = [
+    @foreach (var d in Model.DailyStats)
+    {
+            <text>@d.Attempts,</text>
+    }
+    ];
+
+    const ctx = document.getElementById('dailyChart');
+
+    new Chart(ctx, {
+        type: 'line',
+
+        data: {
+            labels: labels,
+
+            datasets: [
+            {
+                label: 'Успішність тестів (%)',
+                data: results,
+                borderWidth: 2,
+                tension: 0.3,
+                fill: false,
+                yAxisID: 'y'
+            },
+            {
+                label: 'Середній час тесту (сек)',
+                data: times,
+                borderWidth: 2,
+                tension: 0.3,
+                fill: false,
+                yAxisID: 'y1'
+            }]
+        },
+
+        options: {
+
+            responsive: true,
+            maintainAspectRatio: false,
+
+            plugins: {
+
+                tooltip: {
+                    callbacks: {
+                        label: function(context) {
+
+                            const i = context.dataIndex;
+
+                            return [
+                                "Успішність: " + results[i] + "%",
+                                "Середній час: " + times[i] + " сек",
+                                "Спроб: " + attempts[i]
+                            ];
+                        }
+                    }
+                }
+
+            },
+
+            scales: {
+
+                y: {
+                    type: 'linear',
+                    position: 'left',
+                    beginAtZero: true,
+                    max: 100,
+                    title: {
+                        display: true,
+                        text: 'Успішність (%)'
+                    }
+                },
+
+                y1: {
+                    type: 'linear',
+                    position: 'right',
+                    beginAtZero: true,
+                    max: Math.max(...times) * 1.2,
+                    grid: {
+                        drawOnChartArea: false
+                    },
+                    title: {
+                        display: true,
+                        text: 'Час (сек)'
+                    }
+                }
+
+            }
+        }
+    });
+
+</script>

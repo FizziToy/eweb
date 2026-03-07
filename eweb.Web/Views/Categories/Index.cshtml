@@ -1,0 +1,94 @@
+﻿@model IEnumerable<eweb.Domain.Entities.LessonCategory>
+
+@{
+    ViewData["Title"] = "Категорії";
+}
+
+<h2>Категорії уроків</h2>
+
+<hr />
+
+<h4>Додати категорію</h4>
+
+<form asp-action="Create" method="post">
+    <div class="mb-3">
+        <input name="name" class="form-control" placeholder="Назва категорії" />
+    </div>
+
+    <button type="submit" class="btn btn-primary mt-2">
+        Додати
+    </button>
+</form>
+
+<hr />
+
+<h4>Список категорій</h4>
+
+@if (TempData["Error"] != null)
+{
+    <div class="alert alert-danger">
+        @TempData["Error"]
+    </div>
+}
+
+<table class="table">
+    <thead>
+        <tr>
+            <th>Назва</th>
+            <th style="width:200px"></th>
+        </tr>
+    </thead>
+
+    <tbody>
+        @foreach (var category in Model)
+        {
+            <tr>
+                <td>
+
+                    <form asp-action="Edit" method="post" class="d-flex">
+                        <input type="hidden" name="id" value="@category.Id" />
+
+                        <input name="name"
+                               value="@category.Name"
+                               class="form-control me-2" />
+
+                        <button type="submit"
+                                class="btn btn-warning btn-sm me-2">
+                            Зберегти
+                        </button>
+                    </form>
+
+                </td>
+
+                <td>
+
+                    @if (!category.Lessons.Any())
+                    {
+                        <form asp-action="Delete"
+                              method="post"
+                              onsubmit="return confirm('Видалити категорію?');">
+
+                            <input type="hidden" name="id" value="@category.Id" />
+
+                            <button type="submit"
+                                    class="btn btn-danger btn-sm">
+                                Видалити
+                            </button>
+
+                        </form>
+                    }
+                    else
+                    {
+                        <span class="text-muted">Використовується</span>
+                    }
+
+                </td>
+            </tr>
+        }
+    </tbody>
+</table>
+<a asp-controller="Lessons"
+   asp-action="Index"
+   class="btn btn-outline-secondary mt-3">
+    Назад
+</a>
