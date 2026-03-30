@@ -28,7 +28,7 @@ public class Lesson
 
     private Lesson() { }
 
-    public Lesson(int number, string title, string description, string content, int categoryId)
+    public Lesson(int number, string title, string description, string content, int categoryId, DateOnly? createdAt = null)
     {
         if (number <= 0)
             throw new ArgumentException("Номер уроку має бути більший за 0.");
@@ -42,7 +42,8 @@ public class Lesson
         Content = content?.Trim() ?? string.Empty;
         CategoryId = categoryId;
 
-        CreatedAt = DateOnly.FromDateTime(DateTime.UtcNow);
+        CreatedAt = createdAt ?? DateOnly.FromDateTime(DateTime.UtcNow);
+
         IsPublished = false;
     }
 

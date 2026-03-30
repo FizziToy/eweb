@@ -6,23 +6,40 @@
 
 <h2 class="mb-4">Аналітика навчання</h2>
 
-<hr />
-
-<h4 class="mb-3">Успішність тестів та час проходження</h4>
-
-<div class="d-flex justify-content-center mb-4">
-    <div style="width:800px; height:350px;">
-        <canvas id="dailyChart"></canvas>
-    </div>
+<div class="alert alert-info">
+    Загальна успішність:
+    <strong>@Math.Round(Model.OverallSuccess, 1)%</strong>
 </div>
 
 <hr />
 
-@if (Model.WeakestCategory != null)
+<div class="row mb-4">
+
+    <div class="col-md-6">
+        <h5 class="text-center mb-3">Успішність та час тестів</h5>
+
+        <div style="height:350px;">
+            <canvas id="dailyChart"></canvas>
+        </div>
+    </div>
+
+    <div class="col-md-6">
+        <h5 class="text-center mb-3">Кількість проходжень тестів</h5>
+
+        <div style="height:350px;">
+            <canvas id="attemptsChart"></canvas>
+        </div>
+    </div>
+
+</div>
+
+<hr />
+
+@if (Model.WeakestCategories.Any())
 {
     <div class="alert alert-warning">
-        ⚠ Найменше правильних відповідей у темі:
-        <strong>@Model.WeakestCategory</strong>
+        ⚠ Найменша успішність у темах:
+        <strong>@string.Join(", ", Model.WeakestCategories)</strong>
     </div>
 }
 
@@ -32,16 +49,16 @@
     <thead>
         <tr>
             <th>Категорія</th>
-            <th>Правильних</th>
-            <th>Всього</th>
-            <th>Успішність</th>
+            <th>Правильних тестів</th>
+            <th>Кількість тестів</th>
+            <th>Середній результат (%)</th>
         </tr>
     </thead>
 
     <tbody>
         @foreach (var stat in Model.CategoryStats)
         {
-            var weak = stat.CategoryName == Model.WeakestCategory;
+            var weak = Model.WeakestCategories.Contains(stat.CategoryName);
 
             <tr class="@(weak ? "table-danger" : "")">
                 <td>@stat.CategoryName</td>
@@ -59,7 +76,6 @@
     Назад
 </a>
 
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
 <script>
@@ -67,21 +83,21 @@
     const labels = [
     @foreach (var d in Model.DailyStats)
     {
-            <text>'@d.Date',</text>
+            <text>'@d.Date.ToString("yyyy-MM-dd")',</text>
     }
     ];
 
     const results = [
     @foreach (var d in Model.DailyStats)
     {
-            <text>@Math.Round(d.AverageResult, 1),</text>
+            <text>@Math.Round(d.AverageResult, 1).ToString(System.Globalization.CultureInfo.InvariantCulture),</text>
     }
     ];
 
-       const times = [
+    const times = [
     @foreach (var d in Model.DailyStats)
     {
-            <text>@Math.Round(d.AverageTimeSeconds * 1000, 0),</text>
+            <text>@Math.Round(d.AverageTimeSeconds, 1).ToString(System.Globalization.CultureInfo.InvariantCulture),</text>
     }
     ];
 
@@ -92,62 +108,39 @@
     }
     ];
 
-    const ctx = document.getElementById('dailyChart');
 
-    new Chart(ctx, {
+    // Графік успішності та часу
+
+    new Chart(document.getElementById('dailyChart'), {
+
         type: 'line',
 
         data: {
             labels: labels,
-
             datasets: [
             {
-                label: 'Успішність тестів (%)',
+                label: 'Успішність (%)',
                 data: results,
                 borderWidth: 2,
                 tension: 0.3,
-                fill: false,
                 yAxisID: 'y'
             },
             {
-                label: 'Середній час тесту (сек)',
+                label: 'Час тесту (сек)',
                 data: times,
                 borderWidth: 2,
                 tension: 0.3,
-                fill: false,
                 yAxisID: 'y1'
             }]
         },
 
         options: {
-
             responsive: true,
             maintainAspectRatio: false,
-
-            plugins: {
-
-                tooltip: {
-                    callbacks: {
-                        label: function(context) {
-
-                            const i = context.dataIndex;
-
-                            return [
-                                "Успішність: " + results[i] + "%",
-                                "Середній час: " + times[i] + " сек",
-                                "Спроб: " + attempts[i]
-                            ];
-                        }
-                    }
-                }
-
-            },
 
             scales: {
 
                 y: {
-                    type: 'linear',
-                    position: 'left',
                     beginAtZero: true,
                     max: 100,
                     title: {
@@ -157,10 +150,8 @@
                 },
 
                 y1: {
-                    type: 'linear',
                     position: 'right',
                     beginAtZero: true,
-                    max: Math.max(...times) * 1.2,
                     grid: {
                         drawOnChartArea: false
                     },
@@ -170,6 +161,37 @@
                     }
                 }
 
+            }
+        }
+    });
+
+
+    // Графік кількості спроб
+
+    new Chart(document.getElementById('attemptsChart'), {
+
+        type: 'bar',
+
+        data: {
+            labels: labels,
+            datasets: [{
+                label: 'Кількість спроб',
+                data: attempts,
+                borderWidth: 1
+            }]
+        },
+
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+
+            scales: {
+                y: {
+                    beginAtZero: true,
+                    ticks: {
+                        stepSize: 1
+                    }
+                }
             }
         }
     });

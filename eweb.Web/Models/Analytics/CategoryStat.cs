@@ -8,7 +8,9 @@ public class CategoryStat
 
     public int CorrectAnswers { get; set; }
 
-    public double SuccessPercent =>
-        TotalAnswers == 0 ? 0 :
-        (double)CorrectAnswers / TotalAnswers * 100;
+    public double AverageResult { get; set; }
+
+    public double SuccessPercent => AverageResult;
+
+    public double Score { get; set; }
 }

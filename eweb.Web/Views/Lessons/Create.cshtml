@@ -36,6 +36,10 @@
             <label asp-for="Content" class="form-label">Текст уроку</label>
             <textarea asp-for="Content" class="form-control" rows="8"></textarea>
         </div>
+        <div class="mb-3">
+            <label asp-for="CreatedAt" class="form-label"></label>
+            <input asp-for="CreatedAt" type="date" class="form-control" />
+        </div>
         <div class="form-check mb-3">
             <input asp-for="IsPublished" class="form-check-input" />
             <label asp-for="IsPublished" class="form-check-label">Опублікувати урок</label>

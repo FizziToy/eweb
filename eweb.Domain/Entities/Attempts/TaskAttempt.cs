@@ -3,7 +3,6 @@
 public class TaskAttempt
 {
     public int Id { get; private set; }
-
     public int ExerciseAttemptId { get; private set; }
     public int ExerciseTaskId { get; private set; }
 

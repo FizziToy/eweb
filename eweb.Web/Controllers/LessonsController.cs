@@ -316,7 +316,8 @@ public class LessonsController : Controller
                 model.Title,
                 model.Description,
                 model.Content,
-                model.CategoryId
+                model.CategoryId,
+                model.CreatedAt
             );
 
             if (model.Questions.Count > 10)

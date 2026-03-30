@@ -17,6 +17,7 @@ public class CreateLessonViewModel
     public bool IsPublished { get; set; }
 
     public int MaxNumber { get; set; }
+    public DateOnly CreatedAt { get; set; } = DateOnly.FromDateTime(DateTime.UtcNow);
 
     public List<QuestionInputModel> Questions { get; set; } = new();
     public IEnumerable<SelectListItem>? Categories { get; set; }

@@ -6,5 +6,7 @@ public class AnalyticsViewModel
 
     public List<CategoryStat> CategoryStats { get; set; } = new();
 
-    public string? WeakestCategory { get; set; }
+    public List<string> WeakestCategories { get; set; } = new();
+
+    public double OverallSuccess { get; set; }
 }

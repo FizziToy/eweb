@@ -7,6 +7,7 @@ public class LessonTestAttempt
     public string UserId { get; private set; } = null!;
 
     public int LessonId { get; private set; }
+    public Lesson Lesson { get; private set; } = null!;
 
     public DateTime StartedAt { get; private set; }
 

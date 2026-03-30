@@ -21,44 +21,90 @@ public class AnalyticsController : Controller
     {
         var model = new AnalyticsViewModel();
 
-        model.DailyStats = _context.LessonTestAttempts
-             .Where(a => a.IsFinished)
-             .AsEnumerable()
-             .GroupBy(a => DateOnly.FromDateTime(a.FinishedAt))
-             .Select(g => new DailySuccessStat
-             {
-                 Date = g.Key,
+        // Беремо сирі дані
+        var dailyRaw = await _context.LessonTestAttempts
+            .Where(a => a.IsFinished)
+            .Select(a => new
+            {
+                a.FinishedAt,
+                a.StartedAt,
+                a.ResultPercent
+            })
+            .ToListAsync();
 
-                 AverageResult = g.Average(a => a.ResultPercent),
+        // Групування по днях
+        model.DailyStats = dailyRaw
+            .GroupBy(a => a.FinishedAt.Date)
+            .Select(g => new DailySuccessStat
+            {
+                Date = DateOnly.FromDateTime(g.Key),
 
-                 AverageTimeSeconds = g.Average(a =>
-                     (a.FinishedAt - a.StartedAt).TotalSeconds),
+                AverageResult = g.Average(a => (double)a.ResultPercent),
 
-                 Attempts = g.Count()
-             })
-             .OrderBy(x => x.Date)
-             .ToList();
+                AverageTimeSeconds = g.Average(a =>
+                    (a.FinishedAt - a.StartedAt).TotalSeconds),
 
+                Attempts = g.Count()
+            })
+            .OrderBy(x => x.Date)
+            .ToList();
+
+        // Статистика по категоріях
         model.CategoryStats = await _context.LessonCategories
             .Select(c => new CategoryStat
             {
                 CategoryName = c.Name,
 
-                TotalAnswers = _context.UserQuestionProgresses
-                    .Count(p => p.Question.Lesson.Category.Id == c.Id),
+                TotalAnswers = _context.LessonTestAttempts
+                    .Count(a =>
+                        a.Lesson.CategoryId == c.Id &&
+                        a.IsFinished),
 
-                CorrectAnswers = _context.UserQuestionProgresses
-                    .Count(p => p.Question.Lesson.Category.Id == c.Id)
+                CorrectAnswers = _context.LessonTestAttempts
+                    .Count(a =>
+                        a.Lesson.CategoryId == c.Id &&
+                        a.IsFinished &&
+                        a.ResultPercent >= 50),
+
+                AverageResult = _context.LessonTestAttempts
+                    .Where(a =>
+                        a.Lesson.CategoryId == c.Id &&
+                        a.IsFinished)
+                    .Average(a => (double?)a.ResultPercent) ?? 0
             })
             .ToListAsync();
 
+        // Загальна успішність
+        model.OverallSuccess = model.CategoryStats.Any()
+            ? model.CategoryStats.Average(c => c.SuccessPercent)
+            : 0;
+
+        // Score категорій
+        var avgTime = model.DailyStats.Any()
+            ? model.DailyStats.Average(d => d.AverageTimeSeconds)
+            : 0;
+
+        foreach (var stat in model.CategoryStats)
+        {
+            var timePenalty = avgTime > 0 ? avgTime * 0.02 : 0;
+            stat.Score = stat.SuccessPercent - timePenalty;
+        }
+
+        // Слабкі теми
         if (model.CategoryStats.Any())
         {
-            var weakest = model.CategoryStats
-                .OrderBy(s => s.TotalAnswers)
-                .First();
+            var allPerfect = model.CategoryStats
+                .All(s => s.SuccessPercent == 100);
 
-            model.WeakestCategory = weakest.CategoryName;
+            if (!allPerfect)
+            {
+                var minScore = model.CategoryStats.Min(s => s.Score);
+
+                model.WeakestCategories = model.CategoryStats
+                    .Where(s => s.Score == minScore)
+                    .Select(s => s.CategoryName)
+                    .ToList();
+            }
         }
 
         return View(model);

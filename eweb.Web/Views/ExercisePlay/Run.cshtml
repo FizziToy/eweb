@@ -1,4 +1,6 @@
 ﻿@model eweb.Web.Models.ExercisePlay.ExerciseRunViewModel
+@using System.Text.Json
+@using eweb.Web.Models.ExercisePlay
 
 <h2>@Model.ExerciseTitle</h2>
 
@@ -8,19 +10,51 @@
 }
 else
 {
-    foreach (var task in Model.Tasks)
+    @foreach (var task in Model.Tasks)
     {
-        <div style="margin-bottom:20px;">
+        <div style="margin-bottom:30px;">
             <h4>@task.QuestionText</h4>
 
-            <form asp-action="SubmitTask" method="post">
-                <input type="hidden" name="attemptId" value="@Model.AttemptId" />
-                <input type="hidden" name="taskId" value="@task.TaskId" />
+            @* MULTIPLE CHOICE *@
+            @if (task.Type == "MultipleChoice")
+            {
+                var data = JsonSerializer.Deserialize<MultipleChoiceData>(task.DataJson) ?? new MultipleChoiceData();
 
-                <!-- Поки MVP: просто 2 кнопки -->
-                <button type="submit" name="isCorrect" value="true">Correct</button>
-                <button type="submit" name="isCorrect" value="false">Wrong</button>
-            </form>
+                <form asp-action="SubmitTask" method="post">
+                    <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+                    <input type="hidden" name="taskId" value="@task.TaskId" />
+                @if (data.Options != null)
+                {
+                    @for (int i = 0; i < data.Options.Count; i++)
+                    {
+                        <div>
+                            <input type="checkbox" name="selectedIndexes" value="@i" />
+                            <label>@data.Options[i]</label>
+                        </div>
+                    }
+                }
+
+                 <button type="submit">Перевірити</button>
+                </form>
+            }
+
+            @* FILL GAPS *@
+            else if (task.Type == "FillGaps")
+            {
+                <p>TODO: FillGaps</p>
+            }
+
+            @* REORDER *@
+            else if (task.Type == "Reorder")
+            {
+                <p>TODO: Reorder</p>
+            }
+
+            @* MATCH PAIRS *@
+            else if (task.Type == "MatchPairs")
+            {
+                <p>TODO: MatchPairs</p>
+            }
         </div>
     }
 

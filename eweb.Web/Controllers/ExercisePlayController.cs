@@ -7,6 +7,7 @@ using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using eweb.Web.Models.ExercisePlay;
+using System.Text.Json;
 
 [Authorize]
 public class ExercisePlayController : Controller
@@ -117,7 +118,7 @@ public class ExercisePlayController : Controller
     public async Task<IActionResult> SubmitTask(
     int attemptId,
     int taskId,
-    bool isCorrect)
+    List<int> selectedIndexes)
     {
         var userId = _userManager.GetUserId(User);
 
@@ -132,6 +133,37 @@ public class ExercisePlayController : Controller
 
         if (attempt.IsFinished)
             return BadRequest("Запуск вже завершений.");
+
+        var task = await _context.ExerciseTasks
+            .FirstOrDefaultAsync(x => x.Id == taskId);
+
+        if (task == null)
+            return NotFound();
+
+        selectedIndexes ??= new List<int>();
+
+        var data = JsonSerializer.Deserialize<MultipleChoiceData>(task.DataJson);
+
+        if (data == null || data.CorrectIndexes == null)
+            return BadRequest("Invalid task data");
+
+        var isCorrect = data.CorrectIndexes
+            .OrderBy(x => x)
+            .SequenceEqual(selectedIndexes.OrderBy(x => x));
+
+        var attemptsForTask = attempt.TaskAttempts
+            .Where(x => x.ExerciseTaskId == taskId)
+            .ToList();
+
+        var attemptsCount = attemptsForTask.Count;
+
+        var alreadyCorrect = attemptsForTask.Any(x => x.IsCorrect);
+
+        if (alreadyCorrect)
+            return BadRequest("Вже правильно вирішено");
+
+        if (attemptsCount >= 2)
+            return BadRequest("Спроби вичерпано");
 
         attempt.RegisterTaskAttempt(taskId, isCorrect);
 
@@ -153,7 +185,6 @@ public class ExercisePlayController : Controller
 
         return Ok();
     }
-
 
     [HttpGet]
     public async Task<IActionResult> Run(int attemptId)
@@ -188,7 +219,8 @@ public class ExercisePlayController : Controller
                 {
                     TaskId = t.Id,
                     QuestionText = t.QuestionText,
-                    DataJson = t.DataJson
+                    DataJson = t.DataJson,
+                    Type = t.Type.ToString()
                 })
                 .ToList()
         };

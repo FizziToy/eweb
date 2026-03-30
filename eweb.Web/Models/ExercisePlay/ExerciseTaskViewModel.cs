@@ -5,5 +5,6 @@
         public int TaskId { get; set; }
         public string QuestionText { get; set; } = null!;
         public string DataJson { get; set; } = null!;
+        public string Type { get; set; } = null!;
     }
 }
