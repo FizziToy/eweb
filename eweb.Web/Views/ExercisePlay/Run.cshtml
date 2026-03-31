@@ -12,48 +12,151 @@ else
 {
     @foreach (var task in Model.Tasks)
     {
-        <div style="margin-bottom:30px;">
+        <div style="margin-bottom:30px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+
             <h4>@task.QuestionText</h4>
 
             @* MULTIPLE CHOICE *@
             @if (task.Type == "MultipleChoice")
             {
-                var data = JsonSerializer.Deserialize<MultipleChoiceData>(task.DataJson) ?? new MultipleChoiceData();
+                var data = JsonSerializer.Deserialize<MultipleChoiceData>(
+                task.DataJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new MultipleChoiceData();
 
-                <form asp-action="SubmitTask" method="post">
+                <form asp-action="SubmitTask" method="post" class="task-form">
                     <input type="hidden" name="attemptId" value="@Model.AttemptId" />
                     <input type="hidden" name="taskId" value="@task.TaskId" />
-                @if (data.Options != null)
-                {
-                    @for (int i = 0; i < data.Options.Count; i++)
-                    {
-                        <div>
-                            <input type="checkbox" name="selectedIndexes" value="@i" />
-                            <label>@data.Options[i]</label>
-                        </div>
-                    }
-                }
 
-                 <button type="submit">Перевірити</button>
+                    @if (data.Options != null && data.Options.Count > 0)
+                    {
+                        @for (int i = 0; i < data.Options.Count; i++)
+                        {
+                            <div>
+                                <input type="checkbox" name="selectedIndexes" value="@i" />
+                                <label>@data.Options[i].Text</label>
+                            </div>
+                        }
+                    }
+                    else
+                    {
+                        <p style="color:red;">Немає варіантів</p>
+                    }
+
+                    <br />
+
+                    <button type="submit" class="check-btn">Перевірити</button>
+
+                    <div class="result" style="margin-top:10px; font-weight:bold;"></div>
                 </form>
             }
 
             @* FILL GAPS *@
             else if (task.Type == "FillGaps")
             {
-                <p>TODO: FillGaps</p>
+                var data = JsonSerializer.Deserialize<FillGapsData>(
+                task.DataJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new FillGapsData();
+
+                <form asp-action="SubmitTask" method="post" class="task-form">
+                    <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+                    <input type="hidden" name="taskId" value="@task.TaskId" />
+
+                    @for (int i = 0; i < data.Options.Count; i++)
+                    {
+                        <div>
+                            <input type="radio" name="selectedIndexes" value="@i" />
+                            <label>@data.Options[i]</label>
+                        </div>
+                    }
+
+                    <button type="submit" class="check-btn">Перевірити</button>
+                    <div class="result"></div>
+                </form>
             }
 
             @* REORDER *@
             else if (task.Type == "Reorder")
             {
-                <p>TODO: Reorder</p>
+                var data = JsonSerializer.Deserialize<ReorderData>(
+                task.DataJson,
+                new JsonSerializerOptions
+                {
+                    PropertyNameCaseInsensitive = true
+                }) ?? new ReorderData();
+
+                <form asp-action="SubmitTask" method="post" class="task-form reorder-form">
+                    <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+                    <input type="hidden" name="taskId" value="@task.TaskId" />
+
+                    <p>Перетягни у правильному порядку:</p>
+
+                    <ul class="reorder-list">
+                        @for (int i = 0; i < data.Items.Count; i++)
+                        {
+                            <li draggable="true" data-index="@i">
+                                @data.Items[i]
+                            </li>
+                        }
+                    </ul>
+
+                    <input type="hidden" name="selectedOrder" class="order-input" />
+
+                    <button type="submit" class="check-btn">Перевірити</button>
+                    <div class="result"></div>
+                </form>
             }
 
             @* MATCH PAIRS *@
             else if (task.Type == "MatchPairs")
             {
-                <p>TODO: MatchPairs</p>
+                var data = JsonSerializer.Deserialize<MatchPairsData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }
+                ) ?? new MatchPairsData();
+
+                var shuffledRight = data.Pairs
+                .Select(x => x.Right)
+                .OrderBy(x => Guid.NewGuid())
+                .ToList();
+
+                <form asp-action="SubmitTask" method="post" class="task-form match-form">
+                    <input type="hidden" name="attemptId" value="@Model.AttemptId" />
+                    <input type="hidden" name="taskId" value="@task.TaskId" />
+                    <input type="hidden" name="selectedPairs" class="pairs-input" />
+
+                    <div style="display:flex; gap:40px;">
+                        <!-- LEFT -->
+                        <div>
+                            <h5>Left</h5>
+                            @for (int i = 0; i < data.Pairs.Count; i++)
+                            {
+                                <div class="left-item" data-index="@i">
+                                    @data.Pairs[i].Left
+                                </div>
+                            }
+                        </div>
+
+                        <!-- RIGHT -->
+                        <div>
+                            <h5>Right</h5>
+                            @for (int i = 0; i < shuffledRight.Count; i++)
+                            {
+                                <div class="right-item" data-value="@shuffledRight[i]">
+                                    @shuffledRight[i]
+                                </div>
+                            }
+                        </div>
+                    </div>
+
+                    <button type="submit" class="check-btn">Перевірити</button>
+                    <div class="result"></div>
+                </form>
             }
         </div>
     }
@@ -63,3 +166,103 @@ else
         <button type="submit">Завершити</button>
     </form>
 }
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+
+        document.querySelectorAll(".task-form").forEach(form => {
+
+            let attempts = 0;
+
+            form.addEventListener("submit", async function (e) {
+                e.preventDefault();
+
+                const reorderList = form.querySelector(".reorder-list");
+
+                if (reorderList) {
+                    const order = [];
+
+                    reorderList.querySelectorAll("li").forEach(li => {
+                        order.push(li.dataset.index);
+                    });
+
+                    form.querySelector(".order-input").value = order.join(",");
+                }
+
+                const formData = new FormData(form);
+
+                const response = await fetch(form.action, {
+                    method: "POST",
+                    body: formData
+                });
+
+                const resultDiv = form.querySelector(".result");
+                const button = form.querySelector(".check-btn");
+
+                if (!response.ok) {
+                    resultDiv.innerText = "⚠️ Спроби вичерпано або вже правильно";
+                    button.disabled = true;
+                    return;
+                }
+
+                const data = await response.json();
+
+                attempts++;
+
+                if (data.isCorrect) {
+                    resultDiv.innerText = "✅ Правильно";
+                    button.disabled = true;
+                } else {
+                    resultDiv.innerText = `❌ Неправильно (${attempts}/2)`;
+
+                    if (attempts >= 2) {
+                        button.disabled = true;
+                    }
+                }
+            });
+
+        });
+
+    });
+        document.querySelectorAll(".gap-option").forEach(btn => {
+        btn.addEventListener("click", function () {
+            const form = btn.closest("form");
+
+            form.querySelectorAll(".gap-option").forEach(b => b.style.background = "");
+            btn.style.background = "lightblue";
+
+            form.querySelector(".selected-gap").value = btn.dataset.index;
+        });
+
+    });
+        document.querySelectorAll(".reorder-list").forEach(list => {
+
+        let draggedItem = null;
+
+        list.querySelectorAll("li").forEach(item => {
+
+            item.addEventListener("dragstart", () => {
+                draggedItem = item;
+            });
+
+            item.addEventListener("dragover", (e) => {
+                e.preventDefault();
+            });
+
+            item.addEventListener("drop", () => {
+                if (draggedItem && draggedItem !== item) {
+                    let temp = item.innerHTML;
+                    let tempIndex = item.dataset.index;
+
+                    item.innerHTML = draggedItem.innerHTML;
+                    item.dataset.index = draggedItem.dataset.index;
+
+                    draggedItem.innerHTML = temp;
+                    draggedItem.dataset.index = tempIndex;
+                }
+            });
+
+        });
+
+    });
+</script>

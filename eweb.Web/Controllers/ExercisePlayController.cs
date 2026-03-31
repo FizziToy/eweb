@@ -40,10 +40,24 @@ public class ExercisePlayController : Controller
     {
         var userId = _userManager.GetUserId(User);
 
+        //  СПОЧАТКУ перевіряємо чи є незавершена спроба
+        var existingAttempt = await _context.ExerciseAttempts
+            .FirstOrDefaultAsync(x =>
+                x.UserId == userId &&
+                x.ExerciseId == exerciseId &&
+                !x.IsFinished);
+
+        if (existingAttempt != null)
+        {
+            return RedirectToAction("Run", new { attemptId = existingAttempt.Id });
+        }
+
+        //  рахуємо тільки завершені
         var existingCount = await _context.ExerciseAttempts
             .CountAsync(x =>
                 x.UserId == userId &&
-                x.ExerciseId == exerciseId);
+                x.ExerciseId == exerciseId &&
+                x.IsFinished);
 
         var progress = await _context.UserExerciseProgresses
             .FirstOrDefaultAsync(x =>
@@ -52,6 +66,7 @@ public class ExercisePlayController : Controller
 
         var allowedAttempts = progress?.GetTotalAllowedAttempts() ?? 10;
 
+        // тепер створюємо нову спробу
         var attempt = ExerciseAttempt.Create(
             userId,
             exerciseId,
@@ -118,7 +133,9 @@ public class ExercisePlayController : Controller
     public async Task<IActionResult> SubmitTask(
     int attemptId,
     int taskId,
-    List<int> selectedIndexes)
+    List<int> selectedIndexes,
+    string selectedOrder,
+    string selectedPairs)
     {
         var userId = _userManager.GetUserId(User);
 
@@ -142,48 +159,106 @@ public class ExercisePlayController : Controller
 
         selectedIndexes ??= new List<int>();
 
-        var data = JsonSerializer.Deserialize<MultipleChoiceData>(task.DataJson);
-
-        if (data == null || data.CorrectIndexes == null)
-            return BadRequest("Invalid task data");
-
-        var isCorrect = data.CorrectIndexes
-            .OrderBy(x => x)
-            .SequenceEqual(selectedIndexes.OrderBy(x => x));
-
-        var attemptsForTask = attempt.TaskAttempts
-            .Where(x => x.ExerciseTaskId == taskId)
-            .ToList();
-
-        var attemptsCount = attemptsForTask.Count;
-
-        var alreadyCorrect = attemptsForTask.Any(x => x.IsCorrect);
-
-        if (alreadyCorrect)
-            return BadRequest("Вже правильно вирішено");
-
-        if (attemptsCount >= 2)
-            return BadRequest("Спроби вичерпано");
-
-        attempt.RegisterTaskAttempt(taskId, isCorrect);
-
-        if (isCorrect)
+        // MULTIPLE CHOICE
+        if (task.Type.ToString() == "MultipleChoice")
         {
-            var taskProgressExists = await _context.UserExerciseTaskProgresses
-                .AnyAsync(x =>
-                    x.UserId == userId &&
-                    x.ExerciseTaskId == taskId);
+            var data = JsonSerializer.Deserialize<MultipleChoiceData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            if (!taskProgressExists)
+            if (data == null || data.Options == null)
+                return BadRequest("Invalid task data");
+
+            var correctIndexes = data.Options
+                .Select((opt, index) => new { opt, index })
+                .Where(x => x.opt.IsCorrect)
+                .Select(x => x.index)
+                .OrderBy(x => x)
+                .ToList();
+
+            var selected = selectedIndexes.OrderBy(x => x).ToList();
+
+            var isCorrect = correctIndexes.SequenceEqual(selected);
+
+            return await SaveAttempt(attempt, taskId, isCorrect, userId);
+        }
+
+
+        // REORDER
+        if (task.Type.ToString() == "Reorder")
+        {
+            var data = JsonSerializer.Deserialize<ReorderData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (data == null || data.CorrectOrder == null)
+                return BadRequest("Invalid reorder data");
+
+            if (string.IsNullOrEmpty(selectedOrder))
+                return BadRequest("Order not provided");
+
+            var selected = selectedOrder
+                .Split(',')
+                .Select(int.Parse)
+                .ToList();
+
+            var isCorrect = selected.SequenceEqual(data.CorrectOrder);
+
+            return await SaveAttempt(attempt, taskId, isCorrect, userId);
+        }
+
+
+        // FILL GAPS (поки як single choice)
+        if (task.Type.ToString() == "FillGaps")
+        {
+            var data = JsonSerializer.Deserialize<FillGapsData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (data == null)
+                return BadRequest("Invalid fill data");
+
+            var selected = selectedIndexes.FirstOrDefault();
+
+            var isCorrect = selected == data.CorrectOptionIndex;
+
+            return await SaveAttempt(attempt, taskId, isCorrect, userId);
+        }
+
+        if (task.Type.ToString() == "MatchPairs")
+        {
+            var data = JsonSerializer.Deserialize<MatchPairsData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
+
+            if (data == null)
+                return BadRequest("Invalid match data");
+
+            if (string.IsNullOrEmpty(selectedPairs))
+                return BadRequest("Pairs not provided");
+
+            var userPairs = JsonSerializer.Deserialize<List<UserPair>>(selectedPairs);
+
+            var isCorrect = true;
+
+            foreach (var pair in userPairs)
             {
-                var taskProgress = new UserExerciseTaskProgress(userId, taskId);
-                _context.UserExerciseTaskProgresses.Add(taskProgress);
+                var correctRight = data.Pairs[int.Parse(pair.LeftIndex)].Right;
+
+                if (correctRight != pair.RightValue)
+                {
+                    isCorrect = false;
+                    break;
+                }
             }
+
+            return await SaveAttempt(attempt, taskId, isCorrect, userId);
         }
 
         await _context.SaveChangesAsync();
 
-        return Ok();
+        return BadRequest("Невідомий тип задачі");
+
     }
 
     [HttpGet]
@@ -226,5 +301,44 @@ public class ExercisePlayController : Controller
         };
 
         return View(model);
+    }
+
+    private async Task<IActionResult> SaveAttempt(
+    ExerciseAttempt attempt,
+    int taskId,
+    bool isCorrect,
+    string userId)
+    {
+        var attemptsForTask = attempt.TaskAttempts
+            .Where(x => x.ExerciseTaskId == taskId);
+
+        var attemptsCount = attemptsForTask.Count();
+        var alreadyCorrect = attemptsForTask.Any(x => x.IsCorrect);
+
+        if (alreadyCorrect)
+            return BadRequest("Вже правильно вирішено");
+
+        if (attemptsCount >= 2)
+            return BadRequest("Спроби вичерпано");
+
+        attempt.RegisterTaskAttempt(taskId, isCorrect);
+
+        if (isCorrect)
+        {
+            var exists = await _context.UserExerciseTaskProgresses
+                .AnyAsync(x =>
+                    x.UserId == userId &&
+                    x.ExerciseTaskId == taskId);
+
+            if (!exists)
+            {
+                _context.UserExerciseTaskProgresses
+                    .Add(new UserExerciseTaskProgress(userId, taskId));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Json(new { isCorrect });
     }
 }

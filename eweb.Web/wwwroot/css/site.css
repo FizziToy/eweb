@@ -42,3 +42,30 @@ body {
     font-size: 26px;
     color: #7c3aed;
 }
+.reorder-list {
+    list-style: none;
+    padding: 0;
+}
+
+.reorder-list li {
+    padding: 10px;
+    margin: 5px 0;
+    background: #eee;
+    cursor: grab;
+    border-radius: 5px;
+}
+.left-item, .right-item {
+    padding: 10px;
+    margin: 5px;
+    background: #eee;
+    cursor: pointer;
+    border-radius: 6px;
+}
+
+.selected {
+    background: #cce5ff;
+}
+
+.matched {
+    background: #b6f5c3;
+}
