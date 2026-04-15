@@ -69,3 +69,54 @@ body {
 .matched {
     background: #b6f5c3;
 }
+.correct {
+    background-color: lightgreen;
+}
+.match-wrapper {
+    position: relative;
+}
+
+.match-columns {
+    display: flex;
+    justify-content: flex-start; 
+    gap: 40px; 
+}
+
+.match-container {
+    max-width: 300px; 
+}
+
+.match-lines {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    pointer-events: none;
+}
+
+.left-item, .right-item {
+    padding: 10px;
+    margin: 8px 0;
+    background: #eee;
+    border-radius: 6px;
+    cursor: pointer;
+    width: 80px;
+    text-align: center;
+}
+
+.selected {
+    background: #cce5ff;
+}
+
+.selected-pair {
+    background: #cce5ff; 
+}
+
+.correct {
+    background-color: #b6f5c3;
+}
+
+.incorrect {
+    background-color: #f5b6b6;
+}

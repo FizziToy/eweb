@@ -1,5 +1,9 @@
 ﻿@model List<eweb.Domain.Entities.Exercises.InteractiveExercise>
 
+@{
+    var completedIds = ViewBag.CompletedIds as HashSet<int> ?? new HashSet<int>();
+}
+
 <h2>Вправи</h2>
 
 @if (!Model.Any())
@@ -10,7 +14,14 @@ else
 {
     @foreach (var exercise in Model)
     {
-        <div class="card mb-3 p-3">
+        var isCompleted = completedIds.Contains(exercise.Id);
+
+        var cardStyle = isCompleted
+            ? "background-color:#c8f7c5; border:2px solid green;"
+            : "";
+
+        <div class="card mb-3 p-3" style="@cardStyle">
+
             <h4>@exercise.Title</h4>
 
             @if (!string.IsNullOrEmpty(exercise.Description))
@@ -18,12 +29,21 @@ else
                 <p>@exercise.Description</p>
             }
 
+            @if (isCompleted)
+            {
+                <p style="color:green; font-weight:bold;">
+                    ✔ Вправа повністю виконана
+                </p>
+            }
+
             <form asp-action="Start" method="post">
                 <input type="hidden" name="exerciseId" value="@exercise.Id" />
+
                 <button type="submit" class="btn btn-primary">
                     Почати
                 </button>
             </form>
+
         </div>
     }
 }

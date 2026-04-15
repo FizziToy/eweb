@@ -338,7 +338,15 @@ public class InteractiveExercisesController : Controller
 
                 if (root.TryGetProperty("correctOrder", out var correctOrder))
                 {
-                    vm.CorrectOrder = correctOrder.GetString();
+                    if (correctOrder.ValueKind == JsonValueKind.Array)
+                    {
+                        vm.CorrectOrder = string.Join(",",
+                            correctOrder.EnumerateArray().Select(x => x.GetInt32()));
+                    }
+                    else if (correctOrder.ValueKind == JsonValueKind.String)
+                    {
+                        vm.CorrectOrder = correctOrder.GetString();
+                    }
                 }
                 break;
 

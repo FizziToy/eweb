@@ -24,15 +24,28 @@ public class ExercisePlayController : Controller
     }
 
     [HttpGet]
+    [HttpGet]
     public async Task<IActionResult> Index()
     {
+        var userId = _userManager.GetUserId(User);
+
         var exercises = await _context.InteractiveExercises
             .Where(x => x.IsPublished)
             .ToListAsync();
 
+        var progresses = await _context.UserExerciseProgresses
+            .Where(x => x.UserId == userId)
+            .ToListAsync();
+
+        var completedIds = progresses
+            .Where(x => x.IsFullyCompleted)
+            .Select(x => x.ExerciseId)
+            .ToHashSet();
+
+        ViewBag.CompletedIds = completedIds;
+
         return View(exercises);
     }
-
     // START
 
     [HttpPost]
@@ -124,7 +137,12 @@ public class ExercisePlayController : Controller
 
         await _context.SaveChangesAsync();
 
-        return RedirectToAction("Result", new { attemptId });
+        return Json(new
+        {
+            correct = correctCount,
+            total = allTaskIds.Count,
+            isFully
+        });
     }
 
     //SUBMITTASK
@@ -183,7 +201,6 @@ public class ExercisePlayController : Controller
             return await SaveAttempt(attempt, taskId, isCorrect, userId);
         }
 
-
         // REORDER
         if (task.Type.ToString() == "Reorder")
         {
@@ -191,22 +208,49 @@ public class ExercisePlayController : Controller
                 task.DataJson,
                 new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
 
-            if (data == null || data.CorrectOrder == null)
+            if (data == null || string.IsNullOrEmpty(data.CorrectOrder))
                 return BadRequest("Invalid reorder data");
 
             if (string.IsNullOrEmpty(selectedOrder))
                 return BadRequest("Order not provided");
 
-            var selected = selectedOrder
+            // 🔥 ТІ САМІ ПЕРЕВІРКИ ЯК В SaveAttempt
+            var attemptsForTask = attempt.TaskAttempts
+                .Where(x => x.ExerciseTaskId == taskId);
+
+            var attemptsCount = attemptsForTask.Count();
+            var alreadyCorrect = attemptsForTask.Any(x => x.IsCorrect);
+
+            if (alreadyCorrect)
+                return BadRequest("Вже правильно вирішено");
+
+            if (attemptsCount >= 2)
+                return BadRequest("Спроби вичерпано");
+
+            // логіка reorder
+            var correctList = data.CorrectOrder
                 .Split(',')
                 .Select(int.Parse)
                 .ToList();
 
-            var isCorrect = selected.SequenceEqual(data.CorrectOrder);
+            var selectedList = selectedOrder
+                .Split(',')
+                .Select(int.Parse)
+                .ToList();
 
-            return await SaveAttempt(attempt, taskId, isCorrect, userId);
+            var isCorrect = selectedList.SequenceEqual(correctList);
+
+            // запис результату
+            attempt.RegisterTaskAttempt(taskId, isCorrect);
+
+            await _context.SaveChangesAsync();
+
+            return Json(new
+            {
+                isCorrect,
+                correctOrder = data.CorrectOrder
+            });
         }
-
 
         // FILL GAPS (поки як single choice)
         if (task.Type.ToString() == "FillGaps")
@@ -225,6 +269,7 @@ public class ExercisePlayController : Controller
             return await SaveAttempt(attempt, taskId, isCorrect, userId);
         }
 
+        // MATCH PAIRS
         if (task.Type.ToString() == "MatchPairs")
         {
             var data = JsonSerializer.Deserialize<MatchPairsData>(
@@ -239,13 +284,35 @@ public class ExercisePlayController : Controller
 
             var userPairs = JsonSerializer.Deserialize<List<UserPair>>(selectedPairs);
 
+            if (userPairs == null || userPairs.Count != data.Pairs.Count)
+                return await SaveAttempt(attempt, taskId, false, userId);
+
+            var usedRightValues = new HashSet<string>();
+
             var isCorrect = true;
 
             foreach (var pair in userPairs)
             {
-                var correctRight = data.Pairs[int.Parse(pair.LeftIndex)].Right;
+                var leftIndex = int.Parse(pair.LeftIndex);
 
+                // перевірка індексу
+                if (leftIndex < 0 || leftIndex >= data.Pairs.Count)
+                {
+                    isCorrect = false;
+                    break;
+                }
+
+                var correctRight = data.Pairs[leftIndex].Right;
+
+                // ❗ головна перевірка
                 if (correctRight != pair.RightValue)
+                {
+                    isCorrect = false;
+                    break;
+                }
+
+                // ❗ перевірка дублювання
+                if (!usedRightValues.Add(pair.RightValue))
                 {
                     isCorrect = false;
                     break;
@@ -341,4 +408,5 @@ public class ExercisePlayController : Controller
 
         return Json(new { isCorrect });
     }
+
 }

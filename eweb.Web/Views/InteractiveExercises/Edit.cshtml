@@ -133,6 +133,12 @@
                         <input name="Tasks[@i].ReorderItem3" value="@Model.Tasks[i].ReorderItem3" />
                         <input name="Tasks[@i].ReorderItem4" value="@Model.Tasks[i].ReorderItem4" />
                     </div>
+                    <div>
+                        <label>Правильний порядок (напр. 2,4,1,3)</label>
+                        <input name="Tasks[@i].CorrectOrder"
+                               value="@Model.Tasks[i].CorrectOrder"
+                               placeholder="1,2,3,4" />
+                    </div>
 
                 </div>
                 <div class="matchpairs-block" style="display:none;">
@@ -255,6 +261,10 @@
                 <input name="Tasks[__index__].ReorderItem3" placeholder="Слово 3" />
                 <input name="Tasks[__index__].ReorderItem4" placeholder="Слово 4" />
             </div>
+            <div>
+                <label>Правильний порядок (напр. 2,4,1,3)</label>
+                <input name="Tasks[__index__].CorrectOrder" placeholder="1,2,3,4" />
+            </div>
         </div>
 
         <div class="matchpairs-block" style="display:none;">
@@ -300,7 +310,7 @@
 <script>
     let taskIndex = @Model.Tasks.Count;
 
-    document.getElementById("add-task-btn").addEventListener("click", function () {
+        document.getElementById("add-task-btn").addEventListener("click", function () {
 
         const container = document.getElementById("tasks-container");
 
@@ -317,6 +327,10 @@
 
         container.insertAdjacentHTML("beforeend", newTask);
 
+        const newBlock = container.lastElementChild;
+        const newSelect = newBlock.querySelector(".task-type-select");
+        if (newSelect) handleTypeChange(newSelect);
+
         taskIndex++;
     });
 </script>
@@ -324,47 +338,39 @@
 <script>
     function setBlockState(block, show) {
         block.style.display = show ? "block" : "none";
-
         block.querySelectorAll("input, select").forEach(el => {
             el.disabled = !show;
         });
     }
 
     function handleTypeChange(select) {
-
         const taskBlock = select.closest(".task-block");
-
-        const mc = taskBlock.querySelector(".multiple-choice-block");
+        const mc      = taskBlock.querySelector(".multiple-choice-block");
         const reorder = taskBlock.querySelector(".reorder-block");
-        const match = taskBlock.querySelector(".matchpairs-block");
-        const fill = taskBlock.querySelector(".fillgaps-block");
+        const match   = taskBlock.querySelector(".matchpairs-block");
+        const fill    = taskBlock.querySelector(".fillgaps-block");
 
-        setBlockState(mc, false);
+        setBlockState(mc,      false);
         setBlockState(reorder, false);
-        setBlockState(match, false);
-        setBlockState(fill, false);
+        setBlockState(match,   false);
+        setBlockState(fill,    false);
 
         const value = parseInt(select.value);
-
-        if (value === 1) setBlockState(mc, true);
+        if (value === 1) setBlockState(mc,      true);
         if (value === 2) setBlockState(reorder, true);
-        if (value === 3) setBlockState(match, true);
-        if (value === 4) setBlockState(fill, true);
+        if (value === 3) setBlockState(match,   true);
+        if (value === 4) setBlockState(fill,    true);
     }
 
-    document.addEventListener("DOMContentLoaded", function() {
+    // 🔥 ГОЛОВНЕ — delegation
+    document.addEventListener("change", function (e) {
+        if (e.target.classList.contains("task-type-select")) {
+            handleTypeChange(e.target);
+        }
+    });
 
-        document.querySelectorAll(".task-type-select").forEach(select => {
-
-            // Вішаємо listener
-            select.addEventListener("change", function() {
-                handleTypeChange(this);
-            });
-
-            // І одразу запускаємо
-            handleTypeChange(select);
-
-        });
-
+    // Ініціалізація існуючих
+    document.addEventListener("DOMContentLoaded", function () {
+        document.querySelectorAll(".task-type-select").forEach(handleTypeChange);
     });
 </script>

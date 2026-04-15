@@ -5,7 +5,7 @@ public class TheoryQuestion
     private const int MaxAnswers = 9;
 
     private const int MinCorrectAnswers = 1;
-    private const int MaxCorrectAnswers = 3;
+    private const int MaxCorrectAnswers = 8;
 
     private readonly List<AnswerOption> _answerOptions = new();
 
