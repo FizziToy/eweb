@@ -21,32 +21,28 @@ public class AnalyticsController : Controller
     {
         var model = new AnalyticsViewModel();
 
-        // Беремо сирі дані
         var dailyRaw = await _context.LessonTestAttempts
             .Where(a => a.IsFinished)
-            .Select(a => new
-            {
-                a.FinishedAt,
-                a.StartedAt,
-                a.ResultPercent
-            })
-            .ToListAsync();
-
-        // Групування по днях
-        model.DailyStats = dailyRaw
             .GroupBy(a => a.FinishedAt.Date)
-            .Select(g => new DailySuccessStat
+            .Select(g => new
             {
-                Date = DateOnly.FromDateTime(g.Key),
-
+                Date = g.Key,
                 AverageResult = g.Average(a => (double)a.ResultPercent),
-
                 AverageTimeSeconds = g.Average(a =>
-                    (a.FinishedAt - a.StartedAt).TotalSeconds),
-
+                    EF.Functions.DateDiffSecond(a.StartedAt, a.FinishedAt)),
                 Attempts = g.Count()
             })
             .OrderBy(x => x.Date)
+            .ToListAsync();
+
+        model.DailyStats = dailyRaw
+            .Select(x => new DailySuccessStat
+            {
+                Date = DateOnly.FromDateTime(x.Date),
+                AverageResult = x.AverageResult,
+                AverageTimeSeconds = x.AverageTimeSeconds,
+                Attempts = x.Attempts
+            })
             .ToList();
 
         // Статистика по категоріях

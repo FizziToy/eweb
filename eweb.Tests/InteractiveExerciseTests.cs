@@ -72,10 +72,29 @@ namespace eweb.Tests
         {
             var exercise = new InteractiveExercise(1, "Title", "Desc", 1);
 
+            for (int i = 1; i <= 3; i++)
+            {
+                exercise.AddTask(new ExerciseTask(
+                    ExerciseType.MultipleChoice,
+                    $"Q{i}",
+                    "{}",
+                    1,
+                    i));
+            }
+
             exercise.Publish();
 
             Assert.Throws<InvalidOperationException>(() =>
                 exercise.EnsureCanBeEdited());
+        }
+
+        [Fact]
+        public void PublishWithoutEnoughTasksThrows()
+        {
+            var exercise = new InteractiveExercise(1, "Title", "Desc", 1);
+
+            Assert.Throws<InvalidOperationException>(() =>
+                exercise.Publish());
         }
 
         [Fact]

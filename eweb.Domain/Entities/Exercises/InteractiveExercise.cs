@@ -41,7 +41,12 @@ public class InteractiveExercise
         Order = order;
     }
 
-    public void Publish() => IsPublished = true;
+    public void Publish()
+    {
+        EnsureCanBePublished();
+
+        IsPublished = true;
+    }
 
     public void Unpublish() => IsPublished = false;
 

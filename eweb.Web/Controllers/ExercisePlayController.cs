@@ -266,11 +266,14 @@ public class ExercisePlayController : Controller
             // запис результату
             attempt.RegisterTaskAttempt(taskId, isCorrect);
 
+            var attemptsLeft = GetAttemptsLeft(attempt, taskId);
+
             await _context.SaveChangesAsync();
 
             return Json(new
             {
                 isCorrect,
+                attemptsLeft,
                 correctOrder = data.CorrectOrder
             });
         }
@@ -308,41 +311,55 @@ public class ExercisePlayController : Controller
             var userPairs = JsonSerializer.Deserialize<List<UserPair>>(selectedPairs);
 
             if (userPairs == null || userPairs.Count != data.Pairs.Count)
-                return await SaveAttempt(attempt, taskId, false, userId);
+                return await SaveMatchAttempt(attempt, taskId, false, userId, new List<object>());
 
             var usedRightValues = new HashSet<string>();
 
             var isCorrect = true;
+            var pairResults = new List<object>();
 
             foreach (var pair in userPairs)
             {
-                var leftIndex = int.Parse(pair.LeftIndex);
+                if (!int.TryParse(pair.LeftIndex, out var leftIndex))
+                {
+                    isCorrect = false;
+                    pairResults.Add(new
+                    {
+                        pair.LeftIndex,
+                        pair.RightValue,
+                        isCorrect = false
+                    });
+                    continue;
+                }
 
-                // перевірка індексу
                 if (leftIndex < 0 || leftIndex >= data.Pairs.Count)
                 {
                     isCorrect = false;
-                    break;
+                    pairResults.Add(new
+                    {
+                        pair.LeftIndex,
+                        pair.RightValue,
+                        isCorrect = false
+                    });
+                    continue;
                 }
 
                 var correctRight = data.Pairs[leftIndex].Right;
+                var pairIsCorrect = correctRight == pair.RightValue &&
+                    usedRightValues.Add(pair.RightValue);
 
-                // ❗ головна перевірка
-                if (correctRight != pair.RightValue)
-                {
+                if (!pairIsCorrect)
                     isCorrect = false;
-                    break;
-                }
 
-                // ❗ перевірка дублювання
-                if (!usedRightValues.Add(pair.RightValue))
+                pairResults.Add(new
                 {
-                    isCorrect = false;
-                    break;
-                }
+                    pair.LeftIndex,
+                    pair.RightValue,
+                    isCorrect = pairIsCorrect
+                });
             }
 
-            return await SaveAttempt(attempt, taskId, isCorrect, userId);
+            return await SaveMatchAttempt(attempt, taskId, isCorrect, userId, pairResults);
         }
 
         await _context.SaveChangesAsync();
@@ -432,7 +449,64 @@ public class ExercisePlayController : Controller
 
         await _context.SaveChangesAsync();
 
-        return Json(new { isCorrect });
+        return Json(new
+        {
+            isCorrect,
+            attemptsLeft = GetAttemptsLeft(attempt, taskId)
+        });
+    }
+
+    private async Task<IActionResult> SaveMatchAttempt(
+        ExerciseAttempt attempt,
+        int taskId,
+        bool isCorrect,
+        string userId,
+        IReadOnlyCollection<object> pairResults)
+    {
+        var attemptsForTask = attempt.TaskAttempts
+            .Where(x => x.ExerciseTaskId == taskId);
+
+        var attemptsCount = attemptsForTask.Count();
+        var alreadyCorrect = attemptsForTask.Any(x => x.IsCorrect);
+
+        if (alreadyCorrect)
+            return BadRequest("Вже правильно вирішено");
+
+        if (attemptsCount >= 2)
+            return BadRequest("Спроби вичерпано");
+
+        attempt.RegisterTaskAttempt(taskId, isCorrect);
+
+        if (isCorrect)
+        {
+            var exists = await _context.UserExerciseTaskProgresses
+                .AnyAsync(x =>
+                    x.UserId == userId &&
+                    x.ExerciseTaskId == taskId);
+
+            if (!exists)
+            {
+                _context.UserExerciseTaskProgresses
+                    .Add(new UserExerciseTaskProgress(userId, taskId));
+            }
+        }
+
+        await _context.SaveChangesAsync();
+
+        return Json(new
+        {
+            isCorrect,
+            attemptsLeft = GetAttemptsLeft(attempt, taskId),
+            pairResults
+        });
+    }
+
+    private static int GetAttemptsLeft(ExerciseAttempt attempt, int taskId)
+    {
+        var attemptsCount = attempt.TaskAttempts
+            .Count(x => x.ExerciseTaskId == taskId);
+
+        return Math.Max(0, 2 - attemptsCount);
     }
 
 }

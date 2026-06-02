@@ -15,8 +15,8 @@ html {
     --app-surface: #ffffff;
     --app-surface-soft: #f8fafc;
     --app-border: #dbe3ee;
-    --app-text: #172033;
-    --app-muted: #667085;
+    --app-text: #14112a;
+    --app-muted: #5f5b73;
     --app-primary: #7c3aed;
     --app-primary-dark: #6d28d9;
     --app-primary-soft: #f3edff;
@@ -33,9 +33,9 @@ body {
     background:
         radial-gradient(circle at top left, rgba(124, 58, 237, 0.10), transparent 34rem),
         linear-gradient(180deg, #f8fbff 0%, var(--app-bg) 100%);
-    font-family: "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-    -webkit-font-smoothing: subpixel-antialiased;
-    text-rendering: optimizeLegibility;
+    font-family: "DM Sans", "Segoe UI", system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+    -webkit-font-smoothing: auto;
+    text-rendering: auto;
 }
 
 a {
@@ -56,13 +56,13 @@ a:hover {
     display: inline-flex;
     align-items: center;
     gap: .65rem;
-    color: var(--app-text);
+    color: #14112a;
     font-weight: 700;
     letter-spacing: 0;
 }
 
 .navbar-brand:hover {
-    color: var(--app-text);
+    color: #14112a;
 }
 
 .brand-mark {
@@ -82,8 +82,8 @@ a:hover {
 
 .app-nav-links .nav-link {
     border-radius: 8px;
-    color: #344054;
-    font-weight: 600;
+    color: #211b3d;
+    font-weight: 700;
     padding-inline: .8rem;
 }
 
