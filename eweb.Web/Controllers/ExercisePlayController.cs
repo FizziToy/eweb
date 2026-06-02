@@ -25,7 +25,6 @@ public class ExercisePlayController : Controller
     }
 
     [HttpGet]
-    [HttpGet]
     public async Task<IActionResult> Index()
     {
         var userId = _userManager.GetUserId(User);
@@ -130,14 +129,17 @@ public class ExercisePlayController : Controller
         if (attempt.IsFinished)
             return BadRequest();
 
-        attempt.Finish();
-
-        var correctCount = attempt.GetCorrectTasksCount();
-
         var allTaskIds = await _context.ExerciseTasks
             .Where(x => x.ExerciseId == attempt.ExerciseId)
             .Select(x => x.Id)
             .ToListAsync();
+
+        if (!CanFinishAttempt(attempt, allTaskIds))
+            return BadRequest("Перевірте всі завдання або використайте доступні спроби перед завершенням.");
+
+        attempt.Finish();
+
+        var correctCount = attempt.GetCorrectTasksCount();
 
         var isFully = attempt.IsFullyCompleted(allTaskIds);
 
@@ -238,42 +240,19 @@ public class ExercisePlayController : Controller
             if (string.IsNullOrEmpty(selectedOrder))
                 return BadRequest("Order not provided");
 
-            var attemptsForTask = attempt.TaskAttempts
-                .Where(x => x.ExerciseTaskId == taskId);
+            if (!TryParseOrder(data.CorrectOrder, out var correctList) ||
+                !TryParseOrder(selectedOrder, out var selectedList))
+            {
+                return BadRequest("Порядок має містити числа 1,2,3,4 без повторів.");
+            }
 
-            var attemptsCount = attemptsForTask.Count();
-            var alreadyCorrect = attemptsForTask.Any(x => x.IsCorrect);
-
-            if (alreadyCorrect)
-                return BadRequest("Вже правильно вирішено");
-
-            if (attemptsCount >= 2)
-                return BadRequest("Спроби вичерпано");
-
-            // логіка reorder
-            var correctList = data.CorrectOrder
-                .Split(',')
-                .Select(int.Parse)
-                .ToList();
-
-            var selectedList = selectedOrder
-                .Split(',')
-                .Select(int.Parse)
-                .ToList();
+            if (!HasSameItems(selectedList, correctList))
+                return BadRequest("Порядок містить неправильний набір елементів.");
 
             var isCorrect = selectedList.SequenceEqual(correctList);
 
-            // запис результату
-            attempt.RegisterTaskAttempt(taskId, isCorrect);
-
-            var attemptsLeft = GetAttemptsLeft(attempt, taskId);
-
-            await _context.SaveChangesAsync();
-
-            return Json(new
+            return await SaveAttempt(attempt, taskId, isCorrect, userId, new
             {
-                isCorrect,
-                attemptsLeft,
                 correctOrder = data.CorrectOrder
             });
         }
@@ -288,7 +267,10 @@ public class ExercisePlayController : Controller
             if (data == null)
                 return BadRequest("Invalid fill data");
 
-            var selected = selectedIndexes.FirstOrDefault();
+            if (selectedIndexes.Count == 0)
+                return BadRequest("Оберіть відповідь.");
+
+            var selected = selectedIndexes[0];
 
             var isCorrect = selected == data.CorrectOptionIndex;
 
@@ -313,6 +295,7 @@ public class ExercisePlayController : Controller
             if (userPairs == null || userPairs.Count != data.Pairs.Count)
                 return await SaveMatchAttempt(attempt, taskId, false, userId, new List<object>());
 
+            var usedLeftIndexes = new HashSet<int>();
             var usedRightValues = new HashSet<string>();
 
             var isCorrect = true;
@@ -345,8 +328,9 @@ public class ExercisePlayController : Controller
                 }
 
                 var correctRight = data.Pairs[leftIndex].Right;
-                var pairIsCorrect = correctRight == pair.RightValue &&
+                var isUniquePair = usedLeftIndexes.Add(leftIndex) &&
                     usedRightValues.Add(pair.RightValue);
+                var pairIsCorrect = isUniquePair && correctRight == pair.RightValue;
 
                 if (!pairIsCorrect)
                     isCorrect = false;
@@ -417,7 +401,8 @@ public class ExercisePlayController : Controller
     ExerciseAttempt attempt,
     int taskId,
     bool isCorrect,
-    string userId)
+    string userId,
+    object? extraData = null)
     {
         var attemptsForTask = attempt.TaskAttempts
             .Where(x => x.ExerciseTaskId == taskId);
@@ -449,11 +434,21 @@ public class ExercisePlayController : Controller
 
         await _context.SaveChangesAsync();
 
-        return Json(new
+        var response = new Dictionary<string, object?>
         {
-            isCorrect,
-            attemptsLeft = GetAttemptsLeft(attempt, taskId)
-        });
+            ["isCorrect"] = isCorrect,
+            ["attemptsLeft"] = GetAttemptsLeft(attempt, taskId)
+        };
+
+        if (extraData != null)
+        {
+            foreach (var property in extraData.GetType().GetProperties())
+            {
+                response[property.Name] = property.GetValue(extraData);
+            }
+        }
+
+        return Json(response);
     }
 
     private async Task<IActionResult> SaveMatchAttempt(
@@ -507,6 +502,47 @@ public class ExercisePlayController : Controller
             .Count(x => x.ExerciseTaskId == taskId);
 
         return Math.Max(0, 2 - attemptsCount);
+    }
+
+    private static bool CanFinishAttempt(ExerciseAttempt attempt, IEnumerable<int> allTaskIds)
+    {
+        return allTaskIds.All(taskId =>
+        {
+            var taskAttempts = attempt.TaskAttempts
+                .Where(x => x.ExerciseTaskId == taskId)
+                .ToList();
+
+            return taskAttempts.Any(x => x.IsCorrect) || taskAttempts.Count >= 2;
+        });
+    }
+
+    private static bool TryParseOrder(string? order, out List<int> values)
+    {
+        values = new List<int>();
+
+        if (string.IsNullOrWhiteSpace(order))
+            return false;
+
+        try
+        {
+            values = order
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(int.Parse)
+                .ToList();
+
+            return values.Count == 4 && values.Distinct().Count() == values.Count;
+        }
+        catch (FormatException)
+        {
+            return false;
+        }
+    }
+
+    private static bool HasSameItems(IReadOnlyCollection<int> selected, IReadOnlyCollection<int> correct)
+    {
+        return selected
+            .OrderBy(x => x)
+            .SequenceEqual(correct.OrderBy(x => x));
     }
 
 }

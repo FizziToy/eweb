@@ -10,6 +10,8 @@ public class CategoryStat
 
     public double AverageResult { get; set; }
 
+    public double AverageTimeSeconds { get; set; }
+
     public double SuccessPercent => AverageResult;
 
     public double Score { get; set; }

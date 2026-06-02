@@ -66,7 +66,13 @@ public class AnalyticsController : Controller
                     .Where(a =>
                         a.Lesson.CategoryId == c.Id &&
                         a.IsFinished)
-                    .Average(a => (double?)a.ResultPercent) ?? 0
+                    .Average(a => (double?)a.ResultPercent) ?? 0,
+
+                AverageTimeSeconds = _context.LessonTestAttempts
+                    .Where(a =>
+                        a.Lesson.CategoryId == c.Id &&
+                        a.IsFinished)
+                    .Average(a => (double?)EF.Functions.DateDiffSecond(a.StartedAt, a.FinishedAt)) ?? 0
             })
             .ToListAsync();
 
@@ -76,27 +82,27 @@ public class AnalyticsController : Controller
             : 0;
 
         // Score категорій
-        var avgTime = model.DailyStats.Any()
-            ? model.DailyStats.Average(d => d.AverageTimeSeconds)
-            : 0;
-
         foreach (var stat in model.CategoryStats)
         {
-            var timePenalty = avgTime > 0 ? avgTime * 0.02 : 0;
+            var timePenalty = stat.AverageTimeSeconds > 0 ? stat.AverageTimeSeconds * 0.02 : 0;
             stat.Score = stat.SuccessPercent - timePenalty;
         }
 
         // Слабкі теми
-        if (model.CategoryStats.Any())
+        var categoriesWithAttempts = model.CategoryStats
+            .Where(s => s.TotalAnswers > 0)
+            .ToList();
+
+        if (categoriesWithAttempts.Any())
         {
-            var allPerfect = model.CategoryStats
+            var allPerfect = categoriesWithAttempts
                 .All(s => s.SuccessPercent == 100);
 
             if (!allPerfect)
             {
-                var minScore = model.CategoryStats.Min(s => s.Score);
+                var minScore = categoriesWithAttempts.Min(s => s.Score);
 
-                model.WeakestCategories = model.CategoryStats
+                model.WeakestCategories = categoriesWithAttempts
                     .Where(s => s.Score == minScore)
                     .Select(s => s.CategoryName)
                     .ToList();

@@ -18,17 +18,28 @@ document.addEventListener("DOMContentLoaded", () => {
 
     function lockForm(form) {
         form._submitted = true;
+        form.classList.add("is-submitted");
         form.querySelector(".check-btn")?.setAttribute("disabled", "disabled");
+
+        form.querySelectorAll("input, .left-item, .right-item, .reorder-list li")
+            .forEach(element => {
+                element.classList.add("is-locked");
+                if (element.tagName === "INPUT") {
+                    element.disabled = true;
+                }
+            });
+
         updateFinishButtonState();
     }
 
     function clearMatchFeedback(form) {
         form.querySelectorAll(".left-item, .right-item")
-            .forEach(el => el.style.background = "");
+            .forEach(element => element.style.background = "");
     }
 
     function clearTaskFeedback(form) {
-        form.querySelector(".result")?.replaceChildren();
+        const result = form.querySelector(".result");
+        if (result) result.textContent = "";
 
         if (form.classList.contains("match-form")) {
             clearMatchFeedback(form);
@@ -45,10 +56,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 dragged = item;
             });
 
-            item.addEventListener("dragover", e => e.preventDefault());
+            item.addEventListener("dragover", event => event.preventDefault());
 
-            item.addEventListener("drop", e => {
-                e.preventDefault();
+            item.addEventListener("drop", event => {
+                event.preventDefault();
 
                 if (!dragged || dragged === item) return;
 
@@ -77,7 +88,7 @@ document.addEventListener("DOMContentLoaded", () => {
             left.addEventListener("click", () => {
                 if (form._submitted) return;
 
-                leftItems.forEach(l => l.classList.remove("selected"));
+                leftItems.forEach(item => item.classList.remove("selected"));
                 left.classList.add("selected");
                 selectedLeft = left;
             });
@@ -90,9 +101,10 @@ document.addEventListener("DOMContentLoaded", () => {
                 const leftIndex = selectedLeft.dataset.index;
                 const rightValue = right.dataset.value;
 
-                form._pairs = form._pairs.filter(p => p.LeftIndex !== leftIndex);
-
-                if (form._pairs.some(p => p.RightValue === rightValue)) return;
+                form._pairs = form._pairs
+                    .filter(pair =>
+                        pair.LeftIndex !== leftIndex &&
+                        pair.RightValue !== rightValue);
 
                 form._pairs.push({
                     LeftIndex: leftIndex,
@@ -296,6 +308,11 @@ document.getElementById("finishBtn")?.addEventListener("click", async () => {
             body: formData
         });
 
+        if (!response.ok) {
+            alert(await response.text());
+            return;
+        }
+
         const data = await response.json();
 
         document.querySelectorAll("button").forEach(button => {
@@ -308,6 +325,7 @@ document.getElementById("finishBtn")?.addEventListener("click", async () => {
             <div class="content-panel text-center">
                 <h3 class="mb-2">Результат</h3>
                 <p class="metric-value">${data.correct} / ${data.total}</p>
+                <p>${data.isFully ? "Вправу повністю виконано." : "Спробу завершено з неповним результатом."}</p>
                 <div class="action-row justify-content-center mt-3">
                     <button class="btn btn-outline-primary" onclick="location.reload()">
                         Пройти ще раз

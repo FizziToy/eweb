@@ -572,6 +572,16 @@ label,
     padding: .65rem .8rem;
 }
 
+.task-form.is-submitted .left-item,
+.task-form.is-submitted .right-item,
+.task-form.is-submitted .reorder-list li,
+.left-item.is-locked,
+.right-item.is-locked,
+.reorder-list li.is-locked {
+    cursor: default;
+    pointer-events: none;
+}
+
 .reorder-list li {
     cursor: grab;
 }

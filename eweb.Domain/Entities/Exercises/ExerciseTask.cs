@@ -25,9 +25,11 @@ public class ExerciseTask
         int starsReward,
         int order)
     {
+        Validate(type, questionText, dataJson, starsReward, order);
+
         Type = type;
-        QuestionText = questionText;
-        DataJson = dataJson;
+        QuestionText = questionText.Trim();
+        DataJson = dataJson.Trim();
         StarsReward = starsReward;
         Order = order;
     }
@@ -39,10 +41,35 @@ public class ExerciseTask
         int starsReward,
         int order)
     {
+        Validate(type, questionText, dataJson, starsReward, order);
+
         Type = type;
-        QuestionText = questionText;
-        DataJson = dataJson;
+        QuestionText = questionText.Trim();
+        DataJson = dataJson.Trim();
         StarsReward = starsReward;
         Order = order;
+    }
+
+    private static void Validate(
+        ExerciseType type,
+        string questionText,
+        string dataJson,
+        int starsReward,
+        int order)
+    {
+        if (!Enum.IsDefined(type))
+            throw new ArgumentException("Невідомий тип завдання.");
+
+        if (string.IsNullOrWhiteSpace(questionText))
+            throw new ArgumentException("Текст завдання не може бути порожнім.");
+
+        if (string.IsNullOrWhiteSpace(dataJson))
+            throw new ArgumentException("Дані завдання не можуть бути порожніми.");
+
+        if (starsReward < 1 || starsReward > 2)
+            throw new ArgumentException("Кількість зірок має бути від 1 до 2.");
+
+        if (order <= 0)
+            throw new ArgumentException("Порядок завдання має бути більший за 0.");
     }
 }

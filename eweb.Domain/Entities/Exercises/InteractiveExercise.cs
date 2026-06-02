@@ -20,9 +20,11 @@ public class InteractiveExercise
 
     public InteractiveExercise(int lessonId, string title, string? description, int order)
     {
+        Validate(lessonId, title, order);
+
         LessonId = lessonId;
-        Title = title;
-        Description = description;
+        Title = title.Trim();
+        Description = description?.Trim();
         Order = order;
         IsPublished = false;
     }
@@ -36,8 +38,10 @@ public class InteractiveExercise
 
     public void Update(string title, string? description, int order)
     {
-        Title = title;
-        Description = description;
+        Validate(LessonId, title, order);
+
+        Title = title.Trim();
+        Description = description?.Trim();
         Order = order;
     }
 
@@ -52,6 +56,8 @@ public class InteractiveExercise
 
     public void AddTask(ExerciseTask task)
     {
+        ArgumentNullException.ThrowIfNull(task);
+
         _tasks.Add(task);
     }
 
@@ -77,5 +83,17 @@ public class InteractiveExercise
         if (existingCount >= 2)
             throw new InvalidOperationException(
                 "Урок не може містити більше 2 вправ.");
+    }
+
+    private static void Validate(int lessonId, string title, int order)
+    {
+        if (lessonId <= 0)
+            throw new ArgumentException("Урок не задано.");
+
+        if (string.IsNullOrWhiteSpace(title))
+            throw new ArgumentException("Назва вправи не може бути порожньою.");
+
+        if (order <= 0)
+            throw new ArgumentException("Порядок вправи має бути більший за 0.");
     }
 }
