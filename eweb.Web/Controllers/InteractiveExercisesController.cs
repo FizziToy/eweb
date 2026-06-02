@@ -61,6 +61,16 @@ public class InteractiveExercisesController : Controller
             return View(model);
         }
 
+        try
+        {
+            ValidateTasks(model.Tasks);
+        }
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View(model);
+        }
+
         int exerciseOrder = existingCount + 1;
 
         var exercise = new InteractiveExercise(
@@ -147,28 +157,38 @@ public class InteractiveExercisesController : Controller
             return View(model);
         }
 
-        exercise.Update(model.Title, model.Description, exercise.Order);
-
-        _context.ExerciseTasks.RemoveRange(exercise.Tasks);
-        exercise.ClearTasks();
-
-        for (int i = 0; i < model.Tasks.Count; i++)
+        try
         {
-            var taskVm = model.Tasks[i];
-            var json = BuildTaskJson(taskVm);
+            ValidateTasks(model.Tasks);
 
-            var task = new ExerciseTask(
-                taskVm.Type,
-                taskVm.QuestionText,
-                json,
-                taskVm.StarsReward,
-                i + 1
-            );
+            exercise.Update(model.Title, model.Description, exercise.Order);
 
-            exercise.AddTask(task);
+            _context.ExerciseTasks.RemoveRange(exercise.Tasks);
+            exercise.ClearTasks();
+
+            for (int i = 0; i < model.Tasks.Count; i++)
+            {
+                var taskVm = model.Tasks[i];
+                var json = BuildTaskJson(taskVm);
+
+                var task = new ExerciseTask(
+                    taskVm.Type,
+                    taskVm.QuestionText,
+                    json,
+                    taskVm.StarsReward,
+                    i + 1
+                );
+
+                exercise.AddTask(task);
+            }
+
+            await _context.SaveChangesAsync();
         }
-
-        await _context.SaveChangesAsync();
+        catch (InvalidOperationException ex)
+        {
+            ModelState.AddModelError("", ex.Message);
+            return View(model);
+        }
 
         return RedirectToAction(nameof(Index));
     }
@@ -204,6 +224,7 @@ public class InteractiveExercisesController : Controller
     // DELETE
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Delete(int id)
     {
         var exercise = await _context.InteractiveExercises
@@ -244,6 +265,7 @@ public class InteractiveExercisesController : Controller
     // PUBLISH
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Publish(int id)
     {
         var exercise = await _context.InteractiveExercises
@@ -272,6 +294,7 @@ public class InteractiveExercisesController : Controller
     // UNPUBLISH
 
     [HttpPost]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Unpublish(int id)
     {
         var exercise = await _context.InteractiveExercises
@@ -398,6 +421,8 @@ public class InteractiveExercisesController : Controller
 
     private string BuildTaskJson(BaseExerciseTaskViewModel task)
     {
+        ValidateTask(task);
+
         object data = task.Type switch
         {
             ExerciseType.MultipleChoice => new
@@ -446,9 +471,135 @@ public class InteractiveExercisesController : Controller
                 correctOptionIndex = task.CorrectOptionIndex
             },
 
-            _ => throw new Exception("Unsupported task type")
+            _ => throw new InvalidOperationException("Невідомий тип завдання.")
         };
 
         return JsonSerializer.Serialize(data);
+    }
+
+    private static void ValidateTasks(IReadOnlyCollection<BaseExerciseTaskViewModel> tasks)
+    {
+        if (tasks.Count < 3 || tasks.Count > 5)
+            throw new InvalidOperationException("Вправа повинна містити від 3 до 5 завдань.");
+
+        foreach (var task in tasks)
+        {
+            ValidateTask(task);
+        }
+    }
+
+    private static void ValidateTask(BaseExerciseTaskViewModel task)
+    {
+        if (string.IsNullOrWhiteSpace(task.QuestionText))
+            throw new InvalidOperationException("Текст питання не може бути порожнім.");
+
+        if (task.StarsReward < 1 || task.StarsReward > 2)
+            throw new InvalidOperationException("Кількість зірок має бути від 1 до 2.");
+
+        switch (task.Type)
+        {
+            case ExerciseType.MultipleChoice:
+                ValidateMultipleChoice(task);
+                break;
+
+            case ExerciseType.Reorder:
+                ValidateReorder(task);
+                break;
+
+            case ExerciseType.MatchPairs:
+                ValidateMatchPairs(task);
+                break;
+
+            case ExerciseType.FillGaps:
+                ValidateFillGaps(task);
+                break;
+
+            default:
+                throw new InvalidOperationException("Невідомий тип завдання.");
+        }
+    }
+
+    private static void ValidateMultipleChoice(BaseExerciseTaskViewModel task)
+    {
+        var options = new[] { task.Option1, task.Option2, task.Option3, task.Option4 };
+
+        if (options.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("У завданні з вибором відповіді всі 4 варіанти мають бути заповнені.");
+
+        var correctCount = new[]
+        {
+            task.IsOption1Correct,
+            task.IsOption2Correct,
+            task.IsOption3Correct,
+            task.IsOption4Correct
+        }.Count(x => x);
+
+        if (correctCount == 0)
+            throw new InvalidOperationException("У завданні з вибором відповіді має бути хоча б одна правильна відповідь.");
+
+        if (correctCount == options.Length)
+            throw new InvalidOperationException("У завданні з вибором відповіді має бути хоча б одна неправильна відповідь.");
+    }
+
+    private static void ValidateReorder(BaseExerciseTaskViewModel task)
+    {
+        var items = new[] { task.ReorderItem1, task.ReorderItem2, task.ReorderItem3, task.ReorderItem4 };
+
+        if (items.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("У завданні на порядок всі 4 елементи мають бути заповнені.");
+
+        var order = ParseCorrectOrder(task.CorrectOrder);
+
+        if (!order.SequenceEqual(new[] { 1, 2, 3, 4 }))
+        {
+            throw new InvalidOperationException("Правильний порядок має містити числа 1,2,3,4 без повторів.");
+        }
+    }
+
+    private static void ValidateMatchPairs(BaseExerciseTaskViewModel task)
+    {
+        var pairs = new[]
+        {
+            (Left: task.Left1, Right: task.Right1),
+            (Left: task.Left2, Right: task.Right2),
+            (Left: task.Left3, Right: task.Right3),
+            (Left: task.Left4, Right: task.Right4)
+        };
+
+        if (pairs.Any(p => string.IsNullOrWhiteSpace(p.Left) || string.IsNullOrWhiteSpace(p.Right)))
+            throw new InvalidOperationException("У завданні на пари всі ліві та праві значення мають бути заповнені.");
+
+        if (pairs.Select(p => p.Right!.Trim()).Distinct(StringComparer.OrdinalIgnoreCase).Count() != pairs.Length)
+            throw new InvalidOperationException("Праві значення у парах не мають повторюватися.");
+    }
+
+    private static void ValidateFillGaps(BaseExerciseTaskViewModel task)
+    {
+        var options = new[] { task.GapOption1, task.GapOption2, task.GapOption3, task.GapOption4 };
+
+        if (options.Any(string.IsNullOrWhiteSpace))
+            throw new InvalidOperationException("У завданні з пропуском всі 4 варіанти мають бути заповнені.");
+
+        if (task.CorrectOptionIndex < 0 || task.CorrectOptionIndex > 3)
+            throw new InvalidOperationException("Правильний варіант для пропуску має бути від 1 до 4.");
+    }
+
+    private static List<int> ParseCorrectOrder(string? correctOrder)
+    {
+        if (string.IsNullOrWhiteSpace(correctOrder))
+            throw new InvalidOperationException("Правильний порядок має бути заповнений.");
+
+        try
+        {
+            return correctOrder
+                .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                .Select(int.Parse)
+                .OrderBy(x => x)
+                .ToList();
+        }
+        catch (FormatException)
+        {
+            throw new InvalidOperationException("Правильний порядок має містити тільки числа, розділені комами.");
+        }
     }
 }

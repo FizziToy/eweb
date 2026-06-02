@@ -1,4 +1,5 @@
 ﻿using eweb.Domain.Entities.Attempts;
+using eweb.Domain.Entities.Exercises;
 using eweb.Domain.Entities.Progress;
 using eweb.Infrastructure.Data;
 using eweb.Infrastructure.Identity;
@@ -29,6 +30,9 @@ public class ExercisePlayController : Controller
     {
         var userId = _userManager.GetUserId(User);
 
+        if (userId == null)
+            return Challenge();
+
         var exercises = await _context.InteractiveExercises
             .Where(x => x.IsPublished)
             .ToListAsync();
@@ -52,6 +56,9 @@ public class ExercisePlayController : Controller
     public async Task<IActionResult> Start(int exerciseId)
     {
         var userId = _userManager.GetUserId(User);
+
+        if (userId == null)
+            return Challenge();
 
         var exerciseExists = await _context.InteractiveExercises
             .AnyAsync(x => x.Id == exerciseId && x.IsPublished);
@@ -107,6 +114,9 @@ public class ExercisePlayController : Controller
     public async Task<IActionResult> Finish(int attemptId)
     {
         var userId = _userManager.GetUserId(User);
+
+        if (userId == null)
+            return Challenge();
 
         var attempt = await _context.ExerciseAttempts
             .Include(x => x.TaskAttempts)
@@ -166,6 +176,9 @@ public class ExercisePlayController : Controller
     {
         var userId = _userManager.GetUserId(User);
 
+        if (userId == null)
+            return Challenge();
+
         var attempt = await _context.ExerciseAttempts
             .Include(x => x.TaskAttempts)
             .FirstOrDefaultAsync(x =>
@@ -189,7 +202,7 @@ public class ExercisePlayController : Controller
         selectedIndexes ??= new List<int>();
 
         // MULTIPLE CHOICE
-        if (task.Type.ToString() == "MultipleChoice")
+        if (task.Type == ExerciseType.MultipleChoice)
         {
             var data = JsonSerializer.Deserialize<MultipleChoiceData>(
                 task.DataJson,
@@ -213,7 +226,7 @@ public class ExercisePlayController : Controller
         }
 
         // REORDER
-        if (task.Type.ToString() == "Reorder")
+        if (task.Type == ExerciseType.Reorder)
         {
             var data = JsonSerializer.Deserialize<ReorderData>(
                 task.DataJson,
@@ -263,7 +276,7 @@ public class ExercisePlayController : Controller
         }
 
         // FILL GAPS (поки як single choice)
-        if (task.Type.ToString() == "FillGaps")
+        if (task.Type == ExerciseType.FillGaps)
         {
             var data = JsonSerializer.Deserialize<FillGapsData>(
                 task.DataJson,
@@ -280,7 +293,7 @@ public class ExercisePlayController : Controller
         }
 
         // MATCH PAIRS
-        if (task.Type.ToString() == "MatchPairs")
+        if (task.Type == ExerciseType.MatchPairs)
         {
             var data = JsonSerializer.Deserialize<MatchPairsData>(
                 task.DataJson,
@@ -342,6 +355,9 @@ public class ExercisePlayController : Controller
     public async Task<IActionResult> Run(int attemptId)
     {
         var userId = _userManager.GetUserId(User);
+
+        if (userId == null)
+            return Challenge();
 
         var attempt = await _context.ExerciseAttempts
             .FirstOrDefaultAsync(x =>
