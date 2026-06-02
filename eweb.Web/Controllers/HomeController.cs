@@ -58,11 +58,61 @@ namespace eweb.Web.Controllers
                 )
                 .CountAsync();
 
-            var totalTasks = await _context.ExerciseTasks.CountAsync();
+            completedQuestions = Math.Min(completedQuestions, totalQuestions);
+
+            var totalTasks = await _context.ExerciseTasks
+                .Join(
+                    _context.InteractiveExercises.Where(e => e.IsPublished),
+                    task => task.ExerciseId,
+                    exercise => exercise.Id,
+                    (task, exercise) => task
+                )
+                .CountAsync();
 
             var completedTasks = await _context.UserExerciseTaskProgresses
                 .Where(p => p.UserId == userId)
+                .Join(
+                    _context.ExerciseTasks,
+                    progress => progress.ExerciseTaskId,
+                    task => task.Id,
+                    (progress, task) => new { Progress = progress, Task = task }
+                )
+                .Join(
+                    _context.InteractiveExercises.Where(e => e.IsPublished),
+                    x => x.Task.ExerciseId,
+                    exercise => exercise.Id,
+                    (x, exercise) => x.Task
+                )
                 .CountAsync();
+
+            completedTasks = Math.Min(completedTasks, totalTasks);
+
+            var totalStars = await _context.ExerciseTasks
+                .Join(
+                    _context.InteractiveExercises.Where(e => e.IsPublished),
+                    task => task.ExerciseId,
+                    exercise => exercise.Id,
+                    (task, exercise) => task.StarsReward
+                )
+                .SumAsync();
+
+            var earnedStars = await _context.UserExerciseTaskProgresses
+                .Where(p => p.UserId == userId)
+                .Join(
+                    _context.ExerciseTasks,
+                    progress => progress.ExerciseTaskId,
+                    task => task.Id,
+                    (progress, task) => new { Progress = progress, Task = task }
+                )
+                .Join(
+                    _context.InteractiveExercises.Where(e => e.IsPublished),
+                    x => x.Task.ExerciseId,
+                    exercise => exercise.Id,
+                    (x, exercise) => x.Task.StarsReward
+                )
+                .SumAsync();
+
+            earnedStars = Math.Min(earnedStars, totalStars);
 
             var progress = _progressCalculator.Calculate(
                 openedLessons,
@@ -78,8 +128,8 @@ namespace eweb.Web.Controllers
                 OpenLessons = openedLessons,
                 TotalLessons = totalLessons,
                 ExercisesSolved = completedTasks,
-                StarsEarned = completedTasks,
-                StarsTotal = totalTasks,
+                StarsEarned = earnedStars,
+                StarsTotal = totalStars,
                 ProgressPercent = progress
             };
 

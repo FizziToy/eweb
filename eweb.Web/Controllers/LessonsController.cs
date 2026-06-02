@@ -26,13 +26,14 @@ public class LessonsController : Controller
     }
 
     // INDEX
-
     [AllowAnonymous]
     public async Task<IActionResult> Index()
     {
+        bool isAdmin = User.IsInRole(RoleNames.Admin);
+
         var lessonsQuery = _context.Lessons.AsQueryable();
 
-        if (!User.IsInRole(RoleNames.Admin))
+        if (!isAdmin)
         {
             lessonsQuery = lessonsQuery.Where(l => l.IsPublished);
         }
@@ -41,6 +42,27 @@ public class LessonsController : Controller
             .Include(l => l.Category)
             .OrderBy(l => l.Number)
             .ToListAsync();
+
+        var userId = _userManager.GetUserId(User);
+
+        var openedLessons = new List<int>();
+
+        if (userId != null)
+        {
+            var openedLessonIdsFromDatabase = await _context.UserLessonProgresses
+                .Where(x => x.UserId == userId)
+                .Select(x => x.LessonId)
+                .Distinct()
+                .ToListAsync();
+
+            openedLessons = lessons
+                .Where(l => openedLessonIdsFromDatabase.Contains(l.Id))
+                .OrderBy(l => l.Number)
+                .Select(l => l.Id)
+                .ToList();
+        }
+
+        ViewBag.OpenedLessons = openedLessons;
 
         return View(lessons);
     }
@@ -63,6 +85,25 @@ public class LessonsController : Controller
 
         var userId = _userManager.GetUserId(User);
         bool isAdmin = User.IsInRole(RoleNames.Admin);
+
+        if (!isAdmin)
+        {
+            var firstPublishedLessonId = await _context.Lessons
+                .Where(l => l.IsPublished)
+                .OrderBy(l => l.Number)
+                .Select(l => l.Id)
+                .FirstOrDefaultAsync();
+
+            bool isFirstPublishedLesson = id == firstPublishedLessonId;
+
+            bool isOpenedForUser = userId != null && await _context.UserLessonProgresses
+                .AnyAsync(x => x.UserId == userId && x.LessonId == id);
+
+            if (!isFirstPublishedLesson && !isOpenedForUser)
+            {
+                return RedirectToAction(nameof(Index));
+            }
+        }
 
         int attemptsCount = 0;
         int maxAttempts = 10;
@@ -132,6 +173,26 @@ public class LessonsController : Controller
 
         if (lesson == null)
             return NotFound();
+
+        if (!isAdmin)
+        {
+            if (!lesson.IsPublished)
+                return NotFound();
+
+            var firstPublishedLessonId = await _context.Lessons
+                .Where(l => l.IsPublished)
+                .OrderBy(l => l.Number)
+                .Select(l => l.Id)
+                .FirstOrDefaultAsync();
+
+            bool isFirstPublishedLesson = lesson.Id == firstPublishedLessonId;
+
+            bool isOpenedForUser = userId != null && await _context.UserLessonProgresses
+                .AnyAsync(x => x.UserId == userId && x.LessonId == lesson.Id);
+
+            if (!isFirstPublishedLesson && !isOpenedForUser)
+                return RedirectToAction(nameof(Index));
+        }
 
         int attemptsCount = 0;
         int minAttempts = 3;
@@ -207,7 +268,8 @@ public class LessonsController : Controller
         if (!isAdmin && percent >= 50)
         {
             var nextLesson = await _context.Lessons
-                .Where(l => l.Number == lesson.Number + 1 && l.IsPublished)
+                .Where(l => l.IsPublished && l.Number > lesson.Number)
+                .OrderBy(l => l.Number)
                 .FirstOrDefaultAsync();
 
             if (nextLesson != null)
@@ -301,6 +363,15 @@ public class LessonsController : Controller
         {
             var newNumber = model.Number;
 
+            var lessonsCount = await _context.Lessons.CountAsync();
+            var maxNumber = lessonsCount + 1;
+
+            if (newNumber < 1 || newNumber > maxNumber)
+            {
+                throw new InvalidOperationException(
+                    $"Номер уроку має бути від 1 до {maxNumber}.");
+            }
+
             var lessonsToShift = await _context.Lessons
                 .Where(l => l.Number >= newNumber)
                 .OrderByDescending(l => l.Number)
@@ -341,6 +412,11 @@ public class LessonsController : Controller
                 lesson.AddQuestion(question);
             }
 
+            if (model.IsPublished)
+            {
+                lesson.Publish();
+            }
+
             _context.Lessons.Add(lesson);
 
             await _context.SaveChangesAsync();
@@ -352,6 +428,7 @@ public class LessonsController : Controller
             ModelState.AddModelError("", ex.Message);
 
             model.Categories = await GetCategoriesAsync();
+            model.MaxNumber = await _context.Lessons.CountAsync() + 1;
 
             return View(model);
         }
@@ -522,6 +599,7 @@ public class LessonsController : Controller
     }
 
     [HttpPost, ActionName("Delete")]
+    [Authorize(Roles = RoleNames.Admin)]
     [ValidateAntiForgeryToken]
     public async Task<IActionResult> DeleteConfirmed(int id)
     {

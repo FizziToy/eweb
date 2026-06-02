@@ -6,6 +6,13 @@
 
 <h2>Вправи</h2>
 
+@if (TempData["Error"] != null)
+{
+    <div style="color:white; background:#e53935; padding:10px; border-radius:6px; margin-bottom:15px;">
+        @TempData["Error"]
+    </div>
+}
+
 @if (!Model.Any())
 {
     <p>Поки що немає доступних вправ.</p>

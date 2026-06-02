@@ -5,104 +5,158 @@
     ViewData["Title"] = "Уроки";
     bool isAdmin = User.IsInRole(RoleNames.Admin);
     var lessons = Model.ToList();
+
+    var openedLessons = ViewBag.OpenedLessons as List<int> ?? new List<int>();
+
+    int completed = Math.Min(openedLessons.Count, lessons.Count);
+    int total = lessons.Count;
+    int pct = total > 0 ? (int)Math.Round(completed * 100.0 / total) : 0;
+    pct = Math.Min(pct, 100);
 }
 
-<h1>Уроки</h1>
+<div class="lessons-page">
 
-@if (isAdmin)
-{
-    <p>
-        <a asp-action="Create" class="btn btn-primary">
-            Створити урок
-        </a>
+    <!-- Header -->
+    <div class="lessons-header">
+        <h1>C# Уроки</h1>
+        <p>Вивчайте програмування на C# крок за кроком</p>
+    </div>
 
-        <a asp-controller="Categories"
-           asp-action="Index"
-           class="btn btn-outline-secondary ms-2">
-            Керування категоріями
-        </a>
-    </p>
-}
+    <!-- Admin toolbar -->
+    @if (isAdmin)
+    {
+        <div class="lessons-toolbar">
+            <a asp-action="Create" class="btn-lessons-primary">
+                + Створити урок
+            </a>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>№</th>
-            <th>Назва</th>
-            <th>Категорія</th>
-            <th>Опис</th>
+            <a asp-controller="Categories" asp-action="Index" class="btn-lessons-outline">
+                Категорії
+            </a>
+        </div>
+    }
 
-            @if (isAdmin)
-            {
-                <th>Статус</th>
-                <th>Створено</th>
-            }
+    <!-- Progress -->
+    <div class="lessons-progress-banner">
+        <div class="progress-label">Ваш прогрес</div>
 
-            <th></th>
-        </tr>
-    </thead>
+        <div class="progress-meta">
+            <span>@completed з @total уроків відкрито</span>
+            <span>@pct%</span>
+        </div>
 
-    <tbody>
-        @for (int i = 0; i < Model.Count(); i++)
+        <div class="lessons-progress-track">
+            <div class="lessons-progress-fill" data-pct="@pct" style="width:0%"></div>
+        </div>
+    </div>
+
+    <!-- Cards -->
+    <div class="lessons-grid">
+        @for (int i = 0; i < lessons.Count; i++)
         {
             var lesson = lessons[i];
+            bool done = openedLessons.Contains(lesson.Id);
+            bool locked = false;
 
-            <tr>
-                <td>
-                    @(isAdmin? lesson.Number: i + 1)
-                </td>
+            if (!isAdmin)
+            {
+                locked = i != 0 && !openedLessons.Contains(lesson.Id);
+            }
 
-                <td>@lesson.Title</td>
-                <td>@lesson.Category?.Name</td>
-                <td>@lesson.Description</td>
+            <div class="lesson-card @(locked ? "is-locked" : "")">
 
-                @if (isAdmin)
-                {
-                    <td>
-                        @if (lesson.IsPublished)
+                <!-- Top -->
+                <div class="lesson-card-top">
+
+                    <div>
+                        @if (locked)
                         {
-                            <span class="badge bg-success">
-                                Опубліковано
-                            </span>
+                            <span>🔒</span>
+                        }
+                        else if (done)
+                        {
+                            <span>✅</span>
                         }
                         else
                         {
-                            <span class="badge bg-secondary">
-                                Чернетка
-                            </span>
+                            <span>⭕</span>
                         }
-                    </td>
-
-                    <td>
-                        @lesson.CreatedAt
-                    </td>
-                }
-
-                <td>
-
-                    <a asp-action="Details"
-                       asp-route-id="@lesson.Id"
-                       class="btn btn-sm btn-outline-primary">
-                        Переглянути
-                    </a>
+                    </div>
 
                     @if (isAdmin)
                     {
-                        <a asp-action="Edit"
-                           asp-route-id="@lesson.Id"
-                           class="btn btn-sm btn-outline-warning">
-                            Редагувати
-                        </a>
+                        if (lesson.IsPublished)
+                        {
+                            <span class="badge bg-success">Опубліковано</span>
+                        }
+                        else
+                        {
+                            <span class="badge bg-secondary">Чернетка</span>
+                        }
+                    }
+                    else if (lesson.Category != null)
+                    {
+                        <span class="badge bg-light text-dark">
+                            @lesson.Category.Name
+                        </span>
+                    }
+                </div>
 
-                        <a asp-action="Delete"
-                           asp-route-id="@lesson.Id"
-                           class="btn btn-sm btn-outline-danger">
-                            Видалити
-                        </a>
+                <!-- Title -->
+                <h3>
+                    @(isAdmin? lesson.Number + ". " : (i + 1) + ". ")
+                    @lesson.Title
+                </h3>
+
+                @if (!string.IsNullOrWhiteSpace(lesson.Description))
+                {
+                    <p>@lesson.Description</p>
+                }
+
+                <!-- Footer -->
+                <div class="lesson-card-footer">
+
+                    <div>
+                        @if (isAdmin)
+                        {
+                            @lesson.CreatedAt.ToString("dd.MM.yyyy")
+                        }
+                        else
+                        {
+                            @lesson.Category?.Name
+                        }
+                    </div>
+
+                    @if (!locked)
+                    {
+                        <div>
+                            <a asp-action="Details" asp-route-id="@lesson.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                Переглянути
+                            </a>
+
+                            @if (isAdmin)
+                            {
+                                <a asp-action="Edit" asp-route-id="@lesson.Id"
+                                   class="btn btn-sm btn-outline-warning">
+                                    Редагувати
+                                </a>
+
+                                <a asp-action="Delete" asp-route-id="@lesson.Id"
+                                   class="btn btn-sm btn-outline-danger">
+                                    Видалити
+                                </a>
+                            }
+                        </div>
+                    }
+                    else
+                    {
+                        <span>Виконайте попередні уроки</span>
                     }
 
-                </td>
-            </tr>
+                </div>
+            </div>
         }
-    </tbody>
-</table>
+    </div>
+
+</div>

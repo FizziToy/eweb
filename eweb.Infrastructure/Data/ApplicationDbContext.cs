@@ -65,7 +65,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
             .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<UserLessonProgress>()
-            .HasKey(x => new { x.UserId, x.LessonId });
+            .HasOne<Lesson>()
+            .WithMany()
+            .HasForeignKey(x => x.LessonId)
+            .OnDelete(DeleteBehavior.Cascade);
 
         builder.Entity<UserQuestionProgress>()
             .HasKey(x => new { x.UserId, x.QuestionId });
@@ -75,6 +78,9 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
 
         builder.Entity<UserExerciseProgress>()
             .HasKey(x => new { x.UserId, x.ExerciseId });
+
+        builder.Entity<UserLessonProgress>()
+            .HasKey(x => new { x.UserId, x.LessonId });
 
         builder.Entity<ExerciseAttempt>()
             .HasMany(e => e.TaskAttempts)

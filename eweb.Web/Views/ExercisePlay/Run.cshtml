@@ -169,8 +169,9 @@ else
         </div>
     }
 
-    <form asp-action="Finish" method="post">
-        <input type="hidden" name="attemptId" value="@Model.AttemptId" />
-        <button type="submit">Завершити</button>
-    </form>
+    <input type="hidden" id="attemptIdGlobal" value="@Model.AttemptId" />
+
+    <button type="button" id="finishBtn">Завершити</button>
+
+    <div id="finalResult" style="margin-top:20px;"></div>
 }

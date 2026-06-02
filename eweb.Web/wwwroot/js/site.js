@@ -270,3 +270,69 @@
     }
 
 });
+
+(function () {
+    'use strict';
+
+    document.addEventListener('DOMContentLoaded', function () {
+        var fill = document.querySelector('.lessons-progress-fill');
+        if (!fill) return;
+
+        var target = parseFloat(fill.dataset.pct) || 0;
+
+        fill.style.width = '0%';
+
+        requestAnimationFrame(() => {
+            requestAnimationFrame(() => {
+                fill.style.width = target + '%';
+            });
+        });
+    });
+})();
+
+document.getElementById("finishBtn")?.addEventListener("click", async () => {
+
+    const attemptId = document.getElementById("attemptIdGlobal").value;
+
+    const formData = new FormData();
+    formData.append("attemptId", attemptId);
+
+    try {
+        const response = await fetch("/ExercisePlay/Finish", {
+            method: "POST",
+            body: formData
+        });
+
+        const data = await response.json();
+
+        document.querySelectorAll("button").forEach(btn => {
+            btn.disabled = true;
+        });
+
+        const resultDiv = document.getElementById("finalResult");
+
+        resultDiv.innerHTML = `
+            <div style="padding:20px; border-radius:12px; background:#f5f5f5; text-align:center;">
+                
+                <h3 style="margin-bottom:10px;">Результат</h3>
+
+                <p style="font-size:22px; font-weight:bold;">
+                    ${data.correct} / ${data.total}
+                </p>
+
+                <div style="margin-top:15px;">
+                    <button onclick="location.reload()" style="margin-right:10px;">
+                        Пройти ще раз
+                    </button>
+
+                    <button onclick="window.location.href='/ExercisePlay'">
+                        До списку вправ
+                    </button>
+                </div>
+            </div>
+        `;
+
+    } catch {
+        alert("Помилка при завершенні");
+    }
+});

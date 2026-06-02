@@ -53,7 +53,6 @@ public class ExercisePlayController : Controller
     {
         var userId = _userManager.GetUserId(User);
 
-        //  СПОЧАТКУ перевіряємо чи є незавершена спроба
         var existingAttempt = await _context.ExerciseAttempts
             .FirstOrDefaultAsync(x =>
                 x.UserId == userId &&
@@ -61,11 +60,8 @@ public class ExercisePlayController : Controller
                 !x.IsFinished);
 
         if (existingAttempt != null)
-        {
             return RedirectToAction("Run", new { attemptId = existingAttempt.Id });
-        }
 
-        //  рахуємо тільки завершені
         var existingCount = await _context.ExerciseAttempts
             .CountAsync(x =>
                 x.UserId == userId &&
@@ -79,17 +75,24 @@ public class ExercisePlayController : Controller
 
         var allowedAttempts = progress?.GetTotalAllowedAttempts() ?? 10;
 
-        // тепер створюємо нову спробу
-        var attempt = ExerciseAttempt.Create(
-            userId,
-            exerciseId,
-            existingCount,
-            allowedAttempts);
+        try
+        {
+            var attempt = ExerciseAttempt.Create(
+                userId,
+                exerciseId,
+                existingCount,
+                allowedAttempts);
 
-        _context.ExerciseAttempts.Add(attempt);
-        await _context.SaveChangesAsync();
+            _context.ExerciseAttempts.Add(attempt);
+            await _context.SaveChangesAsync();
 
-        return RedirectToAction("Run", new { attemptId = attempt.Id });
+            return RedirectToAction("Run", new { attemptId = attempt.Id });
+        }
+        catch (InvalidOperationException ex)
+        {
+            TempData["Error"] = ex.Message;
+            return RedirectToAction("Index");
+        }
     }
 
     // FINISH
@@ -214,7 +217,6 @@ public class ExercisePlayController : Controller
             if (string.IsNullOrEmpty(selectedOrder))
                 return BadRequest("Order not provided");
 
-            // 🔥 ТІ САМІ ПЕРЕВІРКИ ЯК В SaveAttempt
             var attemptsForTask = attempt.TaskAttempts
                 .Where(x => x.ExerciseTaskId == taskId);
 

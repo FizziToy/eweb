@@ -5,7 +5,7 @@
 <div class="container mb-5">
     <h2>Створити урок</h2>
     <div asp-validation-summary="All" class="text-danger mb-3"></div>
-    <form asp-action="Create">
+    <form asp-action="Create" method="post">
         <div class="mb-3">
             <label asp-for="Number" class="form-label">Номер уроку</label>
             <input asp-for="Number"
