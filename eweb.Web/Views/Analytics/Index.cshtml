@@ -4,36 +4,42 @@
     ViewData["Title"] = "Аналітика";
 }
 
-<h2 class="mb-4">Аналітика навчання</h2>
-
-<div class="alert alert-info">
-    Загальна успішність:
-    <strong>@Math.Round(Model.OverallSuccess, 1)%</strong>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Аналітика</div>
+        <h1>Аналітика навчання</h1>
+        <p>Оцінюйте результати тестів, активність і теми, які потребують уваги.</p>
+    </div>
 </div>
 
-<hr />
+<div class="content-panel">
+    <div class="metric-label">Загальна успішність</div>
+    <div class="metric-value">@Math.Round(Model.OverallSuccess, 1)%</div>
+</div>
 
 <div class="row mb-4">
 
     <div class="col-md-6">
-        <h5 class="text-center mb-3">Успішність та час тестів</h5>
+        <div class="content-panel">
+            <h5 class="mb-3">Успішність та час тестів</h5>
 
-        <div style="height:350px;">
-            <canvas id="dailyChart"></canvas>
+            <div style="height:350px;">
+                <canvas id="dailyChart"></canvas>
+            </div>
         </div>
     </div>
 
     <div class="col-md-6">
-        <h5 class="text-center mb-3">Кількість проходжень тестів</h5>
+        <div class="content-panel">
+            <h5 class="mb-3">Кількість проходжень тестів</h5>
 
-        <div style="height:350px;">
-            <canvas id="attemptsChart"></canvas>
+            <div style="height:350px;">
+                <canvas id="attemptsChart"></canvas>
+            </div>
         </div>
     </div>
 
 </div>
-
-<hr />
 
 @if (Model.WeakestCategories.Any())
 {
@@ -45,30 +51,32 @@
 
 <h4 class="mb-3">Статистика по темах</h4>
 
-<table class="table table-striped">
-    <thead>
-        <tr>
-            <th>Категорія</th>
-            <th>Правильних тестів</th>
-            <th>Кількість тестів</th>
-            <th>Середній результат (%)</th>
-        </tr>
-    </thead>
-
-    <tbody>
-        @foreach (var stat in Model.CategoryStats)
-        {
-            var weak = Model.WeakestCategories.Contains(stat.CategoryName);
-
-            <tr class="@(weak ? "table-danger" : "")">
-                <td>@stat.CategoryName</td>
-                <td>@stat.CorrectAnswers</td>
-                <td>@stat.TotalAnswers</td>
-                <td>@Math.Round(stat.SuccessPercent, 1)%</td>
+<div class="table-shell">
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Категорія</th>
+                <th>Правильних тестів</th>
+                <th>Кількість тестів</th>
+                <th>Середній результат (%)</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+
+        <tbody>
+            @foreach (var stat in Model.CategoryStats)
+            {
+                var weak = Model.WeakestCategories.Contains(stat.CategoryName);
+
+                <tr class="@(weak ? "table-danger" : "")">
+                    <td class="fw-semibold">@stat.CategoryName</td>
+                    <td>@stat.CorrectAnswers</td>
+                    <td>@stat.TotalAnswers</td>
+                    <td>@Math.Round(stat.SuccessPercent, 1)%</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 
 <a asp-controller="Lessons"
    asp-action="Index"

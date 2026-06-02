@@ -3,16 +3,22 @@
     ViewData["Title"] = "Редагувати урок";
 }
 
-<h2>Редагувати урок</h2>
-<hr />
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Адміністрування</div>
+        <h1>Редагувати урок</h1>
+        <p>Оновіть матеріал уроку, порядок та тестові питання.</p>
+    </div>
+</div>
 
-<div asp-validation-summary="All" class="text-danger mb-3"></div>
+<div class="content-panel">
+    <div asp-validation-summary="All" class="text-danger mb-3"></div>
 
-<form asp-action="Edit" method="post">
+    <form asp-action="Edit" method="post">
     <input type="hidden" asp-for="Id" />
 
     <div class="mb-3">
-        <label asp-for="Number" class="form-label"></label>
+        <label asp-for="Number" class="form-label">Номер уроку</label>
         <input asp-for="Number"
                type="number"
                min="1"
@@ -23,7 +29,7 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="Title" class="form-label"></label>
+        <label asp-for="Title" class="form-label">Назва</label>
         <input asp-for="Title" class="form-control" />
     </div>
 
@@ -37,18 +43,18 @@
     </div>
 
     <div class="mb-3">
-        <label asp-for="Description" class="form-label"></label>
+        <label asp-for="Description" class="form-label">Короткий опис</label>
         <input asp-for="Description" class="form-control" />
     </div>
 
     <div class="mb-3">
-        <label asp-for="Content" class="form-label"></label>
+        <label asp-for="Content" class="form-label">Текст уроку</label>
         <textarea asp-for="Content" class="form-control" rows="8"></textarea>
     </div>
 
     <div class="form-check mb-3">
         <input asp-for="IsPublished" class="form-check-input" />
-        <label asp-for="IsPublished" class="form-check-label"></label>
+        <label asp-for="IsPublished" class="form-check-label">Опублікувати урок</label>
     </div>
 
     <hr>
@@ -58,13 +64,13 @@
 
         @for (int i = 0; i < Model.Questions.Count; i++)
         {
-            <div class="card p-3 mb-3 question-block" id="question-block-@i">
+            <div class="question-block" id="question-block-@i">
 
                 <input type="hidden" name="Questions[@i].Id" value="@Model.Questions[i].Id" />
 
                 <div class="d-flex justify-content-between align-items-center mb-2">
                     <h5 class="mb-0">Питання</h5>
-                    <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion('question-block-@i')">
+                    <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion('question-block-@i')">
                         Видалити
                     </button>
                 </div>
@@ -125,9 +131,10 @@
 
     <button type="button"
             id="addQuestionBtn"
-            class="btn btn-secondary mb-3"
+            class="btn btn-outline-primary mb-3"
             onclick="addQuestion()">
-        + Додати питання
+        <i class="bi bi-plus-lg"></i>
+        Додати питання
     </button>
 
     <br>
@@ -140,7 +147,8 @@
         Назад
     </a>
 
-</form>
+    </form>
+</div>
 
 <script>
 
@@ -237,11 +245,11 @@
         const qi = getQuestionCount();
 
         const html = `
-        <div class="card p-3 mb-3 question-block" id="question-block-${qi}">
+        <div class="question-block" id="question-block-${qi}">
             <input type="hidden" name="Questions[${qi}].Id" value="0"/>
             <div class="d-flex justify-content-between mb-2">
                 <h5>Питання</h5>
-                <button type="button" class="btn btn-sm btn-danger"
+                <button type="button" class="btn btn-sm btn-outline-danger"
                         onclick="removeQuestion('question-block-${qi}')">
                     Видалити
                 </button>

@@ -1,3 +1,21 @@
-﻿<h2>My Progress</h2>
+@{
+    ViewData["Title"] = "Прогрес";
+    var progress = Convert.ToDouble(ViewBag.Progress ?? 0);
+}
 
-<p>Progress: @ViewBag.Progress %</p>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Навчання</div>
+        <h1>Мій прогрес</h1>
+        <p>Загальний поступ за уроками, питаннями та практичними завданнями.</p>
+    </div>
+</div>
+
+<div class="content-panel">
+    <div class="metric-label">Поточний прогрес</div>
+    <div class="metric-value">@progress%</div>
+
+    <div class="lessons-progress-track mt-3 bg-light">
+        <div class="lessons-progress-fill" style="width:@progress%"></div>
+    </div>
+</div>

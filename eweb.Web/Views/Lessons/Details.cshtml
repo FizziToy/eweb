@@ -6,62 +6,50 @@
     bool isAdmin = User.IsInRole(RoleNames.Admin);
 }
 
-<h2>Урок №@Model.Number</h2>
-
-<hr />
-
-<div class="card mb-4">
-    <div class="card-body">
-
-        <h4>@Model.Title</h4>
-
-        <p class="text-muted">
-            @Model.Description
-        </p>
-
-        <hr />
-
-        <div>
-            @Model.Content
-        </div>
-
-        @if (isAdmin)
-        {
-            <hr />
-
-            <p>
-                <strong>Статус:</strong>
-                @if (Model.IsPublished)
-                {
-                    <span class="text-success">Опубліковано</span>
-                }
-                else
-                {
-                    <span class="text-danger">Чернетка</span>
-                }
-            </p>
-        }
-
-        <p>
-            <strong>Створено:</strong>
-            @Model.CreatedAt
-        </p>
-
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Урок №@Model.Number</div>
+        <h1>@Model.Title</h1>
+        <p>@Model.Description</p>
     </div>
 </div>
 
-<hr />
+<div class="content-panel">
+    <div class="mb-3">
+        @Model.Content
+    </div>
+
+    @if (isAdmin)
+    {
+        <div class="d-flex flex-wrap gap-2 mt-3">
+            @if (Model.IsPublished)
+            {
+                <span class="status-badge status-success">Опубліковано</span>
+            }
+            else
+            {
+                <span class="status-badge status-danger">Чернетка</span>
+            }
+        </div>
+    }
+
+    <div class="text-muted small mt-3">
+        Створено: @Model.CreatedAt
+    </div>
+</div>
 
 @if (Model.Questions.Any())
 {
-    <h4>Тест</h4>
-
-    @if (!isAdmin)
-    {
-        <p>
-            <strong>Спроби:</strong> @Model.AttemptsCount / 10
-        </p>
-    }
+    <div class="page-header mt-4">
+        <div>
+            <div class="page-kicker">Перевірка знань</div>
+            <h1 class="page-title">Тест</h1>
+            @if (!isAdmin)
+            {
+                <p>Спроби: @Model.AttemptsCount / 10</p>
+            }
+        </div>
+    </div>
 
     @if (Model.AttemptsExceeded && !isAdmin)
     {
@@ -77,15 +65,14 @@
 
             @for (int i = 0; i < Model.Questions.Count; i++)
             {
-                <div class="card mb-3">
-                    <div class="card-body">
+                <div class="content-panel">
 
                         <input type="hidden"
                                asp-for="Questions[i].QuestionId" />
 
-                        <h6>
+                        <h5 class="mb-3">
                             @(i + 1). @Model.Questions[i].QuestionText
-                        </h6>
+                        </h5>
 
                         @for (int j = 0; j < Model.Questions[i].Answers.Count; j++)
                         {
@@ -108,8 +95,8 @@
                                     {
                                         if (answer.IsSelected)
                                         {
-                                            <span class="text-success">
-                                                ✔
+                                            <span class="status-badge status-success ms-2">
+                                                Правильна
                                             </span>
                                         }
                                     }
@@ -118,20 +105,20 @@
 
                             </div>
                         }
-
-                    </div>
                 </div>
             }
 
             @if (Model.AttemptsExceeded)
             {
-                <button type="submit" disabled style="opacity:0.5; cursor:not-allowed;">
+                <button type="submit" class="btn btn-secondary" disabled>
                     Спроби вичерпано
                 </button>
             }
             else
             {
-                <button type="submit">Відправити</button>
+                <button type="submit" class="btn btn-primary">
+                    Відправити
+                </button>
             }
 
         </form>
@@ -155,15 +142,15 @@ else
 @if (Model.ShowCorrectAnswersModal)
 {
     <button type="button"
-            onclick="document.getElementById('correctAnswersModal').style.display='flex'"
-            style="margin-top:1rem;">
+            class="btn btn-outline-primary mt-3"
+            onclick="document.getElementById('correctAnswersModal').style.display='flex'">
         Переглянути правильні відповіді
     </button>
 
     <div id="correctAnswersModal"
-         style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.5); z-index:1000; align-items:center; justify-content:center;">
+         class="app-modal-backdrop">
 
-        <div style="background:#fff; padding:2rem; border-radius:8px; max-width:600px; width:100%; max-height:80vh; overflow-y:auto;">
+        <div class="app-modal">
 
             <h4>Правильні відповіді</h4>
 
@@ -180,6 +167,7 @@ else
             }
 
             <button type="button"
+                    class="btn btn-outline-secondary"
                     onclick="document.getElementById('correctAnswersModal').style.display='none'">
                 Закрити
             </button>
@@ -188,8 +176,6 @@ else
     </div>
 }
 
-<hr />
-
-<a asp-action="Index" class="btn btn-outline-secondary">
+<a asp-action="Index" class="btn btn-outline-secondary mt-4">
     Назад до списку уроків
 </a>

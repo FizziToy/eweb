@@ -1,56 +1,80 @@
 ﻿@model List<eweb.Domain.Entities.Exercises.InteractiveExercise>
 
 @{
+    ViewData["Title"] = "Вправи";
     var completedIds = ViewBag.CompletedIds as HashSet<int> ?? new HashSet<int>();
 }
 
-<h2>Вправи</h2>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Практика</div>
+        <h1>Вправи</h1>
+        <p>Закріплюйте матеріал короткими інтерактивними завданнями.</p>
+    </div>
+</div>
 
 @if (TempData["Error"] != null)
 {
-    <div style="color:white; background:#e53935; padding:10px; border-radius:6px; margin-bottom:15px;">
+    <div class="alert alert-danger">
         @TempData["Error"]
     </div>
 }
 
 @if (!Model.Any())
 {
-    <p>Поки що немає доступних вправ.</p>
+    <div class="content-panel">
+        <p class="mb-0 text-muted">Поки що немає доступних вправ.</p>
+    </div>
 }
 else
 {
-    @foreach (var exercise in Model)
-    {
-        var isCompleted = completedIds.Contains(exercise.Id);
+    <div class="lessons-grid">
+        @foreach (var exercise in Model)
+        {
+            var isCompleted = completedIds.Contains(exercise.Id);
 
-        var cardStyle = isCompleted
-            ? "background-color:#c8f7c5; border:2px solid green;"
-            : "";
+            <div class="lesson-card">
+                <div class="lesson-card-top">
+                    @if (isCompleted)
+                    {
+                        <span class="status-badge status-success">
+                            <i class="bi bi-check2-circle"></i>
+                            Виконано
+                        </span>
+                    }
+                    else
+                    {
+                        <span class="status-badge status-muted">Доступно</span>
+                    }
 
-        <div class="card mb-3 p-3" style="@cardStyle">
+                    <span class="lesson-badge status-muted">
+                        Вправа
+                    </span>
+                </div>
 
-            <h4>@exercise.Title</h4>
+                <h3>
+                    @exercise.Title
+                </h3>
 
-            @if (!string.IsNullOrEmpty(exercise.Description))
-            {
-                <p>@exercise.Description</p>
-            }
+                @if (!string.IsNullOrEmpty(exercise.Description))
+                {
+                    <p>@exercise.Description</p>
+                }
 
-            @if (isCompleted)
-            {
-                <p style="color:green; font-weight:bold;">
-                    ✔ Вправа повністю виконана
-                </p>
-            }
+                <div class="lesson-card-footer">
+                    <div class="text-muted small">
+                        Інтерактивне завдання
+                    </div>
 
-            <form asp-action="Start" method="post">
-                <input type="hidden" name="exerciseId" value="@exercise.Id" />
+                    <form asp-action="Start" method="post" class="lesson-card-actions">
+                        <input type="hidden" name="exerciseId" value="@exercise.Id" />
 
-                <button type="submit" class="btn btn-primary">
-                    Почати
-                </button>
-            </form>
-
-        </div>
-    }
+                        <button type="submit" class="btn-card-action btn-card-view">
+                            Почати
+                        </button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
 }

@@ -1,85 +1,96 @@
-﻿@model IEnumerable<eweb.Domain.Entities.Exercises.InteractiveExercise>
+@model IEnumerable<eweb.Domain.Entities.Exercises.InteractiveExercise>
 
-<h2>Interactive Exercises</h2>
+@{
+    ViewData["Title"] = "Адмін вправи";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Адміністрування</div>
+        <h1>Інтерактивні вправи</h1>
+        <p>Керуйте вправами, статусами публікації та порядком показу.</p>
+    </div>
+
+    <a asp-action="CreateFull" class="btn btn-primary">
+        <i class="bi bi-plus-lg"></i>
+        Створити
+    </a>
+</div>
 
 @if (TempData["Error"] != null)
 {
-    <div style="color:red; font-weight:bold;">
+    <div class="alert alert-danger">
         @TempData["Error"]
     </div>
 }
 
-<br />
-
-<a asp-action="CreateFull">Create New</a>
-
-<br />
-<br />
-
-<table border="1" cellpadding="5">
-    <thead>
-        <tr>
-            <th>Id</th>
-            <th>LessonId</th>
-            <th>Title</th>
-            <th>Order</th>
-            <th>Status</th>
-            <th>Actions</th>
-        </tr>
-    </thead>
-    <tbody>
-        @foreach (var ex in Model)
-        {
+<div class="table-shell">
+    <table class="table">
+        <thead>
             <tr>
-                <td>@ex.Id</td>
-                <td>@ex.LessonId</td>
-                <td>@ex.Title</td>
-                <td>@ex.Order</td>
-                <td>
-                    @if (ex.IsPublished)
-                    {
-                        <span style="color:green;">Published</span>
-                    }
-                    else
-                    {
-                        <span style="color:gray;">Draft</span>
-                    }
-                </td>
-                <td>
-                    @* Publish / Unpublish *@
-                    @if (!ex.IsPublished)
-                    {
-                        <form asp-action="Publish" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="@ex.Id" />
-                            <button type="submit">Publish</button>
-                        </form>
-
-                        <a asp-action="Edit"
-                           asp-route-id="@ex.Id"
-                           style="margin-left:5px;">
-                            Edit
-                        </a>
-                    }
-                    else
-                    {
-                        <form asp-action="Unpublish" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="@ex.Id" />
-                            <button type="submit">Unpublish</button>
-                        </form>
-                    }
-
-                    @if (!ex.IsPublished)
-                    {
-                        <form asp-action="Delete" method="post" style="display:inline;">
-                            <input type="hidden" name="id" value="@ex.Id" />
-                            <button type="submit" onclick="return confirm('Are you sure?')">
-                                Delete
-                            </button>
-                        </form>
-                    }
-
-                </td>
+                <th>Id</th>
+                <th>Урок</th>
+                <th>Назва</th>
+                <th>Порядок</th>
+                <th>Статус</th>
+                <th class="text-end">Дії</th>
             </tr>
-        }
-    </tbody>
-</table>
+        </thead>
+        <tbody>
+            @foreach (var ex in Model)
+            {
+                <tr>
+                    <td>@ex.Id</td>
+                    <td>@ex.LessonId</td>
+                    <td class="fw-semibold">@ex.Title</td>
+                    <td>@ex.Order</td>
+                    <td>
+                        @if (ex.IsPublished)
+                        {
+                            <span class="status-badge status-success">Опубліковано</span>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-muted">Чернетка</span>
+                        }
+                    </td>
+                    <td>
+                        <div class="action-row justify-content-end">
+                            @if (!ex.IsPublished)
+                            {
+                                <form asp-action="Publish" method="post">
+                                    <input type="hidden" name="id" value="@ex.Id" />
+                                    <button type="submit" class="btn btn-sm btn-primary">Опублікувати</button>
+                                </form>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@ex.Id"
+                                   class="btn btn-sm btn-outline-primary">
+                                    Редагувати
+                                </a>
+
+                                <form asp-action="Delete" method="post">
+                                    <input type="hidden" name="id" value="@ex.Id" />
+                                    <button type="submit"
+                                            class="btn btn-sm btn-outline-danger"
+                                            onclick="return confirm('Видалити вправу?')">
+                                        Видалити
+                                    </button>
+                                </form>
+                            }
+                            else
+                            {
+                                <form asp-action="Unpublish" method="post">
+                                    <input type="hidden" name="id" value="@ex.Id" />
+                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
+                                        Зняти з публікації
+                                    </button>
+                                </form>
+                            }
+                        </div>
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>

@@ -53,6 +53,12 @@ public class ExercisePlayController : Controller
     {
         var userId = _userManager.GetUserId(User);
 
+        var exerciseExists = await _context.InteractiveExercises
+            .AnyAsync(x => x.Id == exerciseId && x.IsPublished);
+
+        if (!exerciseExists)
+            return NotFound();
+
         var existingAttempt = await _context.ExerciseAttempts
             .FirstOrDefaultAsync(x =>
                 x.UserId == userId &&
@@ -173,7 +179,9 @@ public class ExercisePlayController : Controller
             return BadRequest("Запуск вже завершений.");
 
         var task = await _context.ExerciseTasks
-            .FirstOrDefaultAsync(x => x.Id == taskId);
+            .FirstOrDefaultAsync(x =>
+                x.Id == taskId &&
+                x.ExerciseId == attempt.ExerciseId);
 
         if (task == null)
             return NotFound();

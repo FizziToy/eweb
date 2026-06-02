@@ -16,27 +16,29 @@
 
 <div class="lessons-page">
 
-    <!-- Header -->
     <div class="lessons-header">
-        <h1>C# Уроки</h1>
-        <p>Вивчайте програмування на C# крок за кроком</p>
+        <div>
+            <div class="page-kicker">Навчання</div>
+            <h1>C# Уроки</h1>
+            <p>Вивчайте програмування на C# крок за кроком.</p>
+        </div>
     </div>
 
-    <!-- Admin toolbar -->
     @if (isAdmin)
     {
         <div class="lessons-toolbar">
             <a asp-action="Create" class="btn-lessons-primary">
-                + Створити урок
+                <i class="bi bi-plus-lg"></i>
+                Створити урок
             </a>
 
             <a asp-controller="Categories" asp-action="Index" class="btn-lessons-outline">
+                <i class="bi bi-tags"></i>
                 Категорії
             </a>
         </div>
     }
 
-    <!-- Progress -->
     <div class="lessons-progress-banner">
         <div class="progress-label">Ваш прогрес</div>
 
@@ -50,7 +52,6 @@
         </div>
     </div>
 
-    <!-- Cards -->
     <div class="lessons-grid">
         @for (int i = 0; i < lessons.Count; i++)
         {
@@ -65,21 +66,29 @@
 
             <div class="lesson-card @(locked ? "is-locked" : "")">
 
-                <!-- Top -->
                 <div class="lesson-card-top">
 
                     <div>
                         @if (locked)
                         {
-                            <span>🔒</span>
+                            <span class="status-badge status-muted">
+                                <i class="bi bi-lock"></i>
+                                Закрито
+                            </span>
                         }
                         else if (done)
                         {
-                            <span>✅</span>
+                            <span class="status-badge status-success">
+                                <i class="bi bi-check2-circle"></i>
+                                Відкрито
+                            </span>
                         }
                         else
                         {
-                            <span>⭕</span>
+                            <span class="status-badge status-warning">
+                                <i class="bi bi-circle"></i>
+                                Новий
+                            </span>
                         }
                     </div>
 
@@ -87,22 +96,21 @@
                     {
                         if (lesson.IsPublished)
                         {
-                            <span class="badge bg-success">Опубліковано</span>
+                            <span class="status-badge status-success">Опубліковано</span>
                         }
                         else
                         {
-                            <span class="badge bg-secondary">Чернетка</span>
+                            <span class="status-badge status-muted">Чернетка</span>
                         }
                     }
                     else if (lesson.Category != null)
                     {
-                        <span class="badge bg-light text-dark">
+                        <span class="lesson-badge status-muted">
                             @lesson.Category.Name
                         </span>
                     }
                 </div>
 
-                <!-- Title -->
                 <h3>
                     @(isAdmin? lesson.Number + ". " : (i + 1) + ". ")
                     @lesson.Title
@@ -113,10 +121,9 @@
                     <p>@lesson.Description</p>
                 }
 
-                <!-- Footer -->
                 <div class="lesson-card-footer">
 
-                    <div>
+                    <div class="text-muted small">
                         @if (isAdmin)
                         {
                             @lesson.CreatedAt.ToString("dd.MM.yyyy")
@@ -129,21 +136,21 @@
 
                     @if (!locked)
                     {
-                        <div>
+                        <div class="lesson-card-actions">
                             <a asp-action="Details" asp-route-id="@lesson.Id"
-                               class="btn btn-sm btn-outline-primary">
+                               class="btn-card-action btn-card-view">
                                 Переглянути
                             </a>
 
                             @if (isAdmin)
                             {
                                 <a asp-action="Edit" asp-route-id="@lesson.Id"
-                                   class="btn btn-sm btn-outline-warning">
+                                   class="btn-card-action btn-card-edit">
                                     Редагувати
                                 </a>
 
                                 <a asp-action="Delete" asp-route-id="@lesson.Id"
-                                   class="btn btn-sm btn-outline-danger">
+                                   class="btn-card-action btn-card-delete">
                                     Видалити
                                 </a>
                             }
@@ -151,7 +158,7 @@
                     }
                     else
                     {
-                        <span>Виконайте попередні уроки</span>
+                        <span class="lock-label">Виконайте попередні уроки</span>
                     }
 
                 </div>

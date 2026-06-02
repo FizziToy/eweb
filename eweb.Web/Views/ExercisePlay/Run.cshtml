@@ -2,19 +2,30 @@
 @using System.Text.Json
 @using eweb.Web.Models.ExercisePlay
 
-<h2>@Model.ExerciseTitle</h2>
+@{
+    ViewData["Title"] = Model.ExerciseTitle;
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Практична вправа</div>
+        <h1>@Model.ExerciseTitle</h1>
+    </div>
+</div>
 
 @if (Model.IsFinished)
 {
-    <p>Цей запуск вже завершений.</p>
+    <div class="content-panel">
+        <p class="mb-0 text-muted">Цей запуск вже завершений.</p>
+    </div>
 }
 else
 {
     @foreach (var task in Model.Tasks)
     {
-        <div style="margin-bottom:30px; padding:15px; border:1px solid #ccc; border-radius:8px;">
+        <div class="content-panel run-task">
 
-            <h4>@task.QuestionText</h4>
+            <h4 class="mb-3">@task.QuestionText</h4>
 
             @* MULTIPLE CHOICE *@
             @if (task.Type == "MultipleChoice")
@@ -34,22 +45,20 @@ else
                     {
                         @for (int i = 0; i < data.Options.Count; i++)
                         {
-                            <div>
-                                <input type="checkbox" name="selectedIndexes" value="@i" />
-                                <label>@data.Options[i].Text</label>
+                            <div class="form-check mb-2">
+                                <input class="form-check-input" type="checkbox" name="selectedIndexes" value="@i" id="task-@task.TaskId-option-@i" />
+                                <label class="form-check-label" for="task-@task.TaskId-option-@i">@data.Options[i].Text</label>
                             </div>
                         }
                     }
                     else
                     {
-                        <p style="color:red;">Немає варіантів</p>
+                        <p class="text-danger">Немає варіантів</p>
                     }
-
-                    <br />
 
                     <button type="submit" class="check-btn">Перевірити</button>
 
-                    <div class="result" style="margin-top:10px; font-weight:bold;"></div>
+                    <div class="result mt-2 fw-bold"></div>
                 </form>
             }
 
@@ -69,9 +78,9 @@ else
 
                     @for (int i = 0; i < data.Options.Count; i++)
                     {
-                        <div>
-                            <input type="radio" name="selectedIndexes" value="@(i + 1)" />
-                            <label>@data.Options[i]</label>
+                        <div class="form-check mb-2">
+                            <input class="form-check-input" type="radio" name="selectedIndexes" value="@(i + 1)" id="task-@task.TaskId-gap-@i" />
+                            <label class="form-check-label" for="task-@task.TaskId-gap-@i">@data.Options[i]</label>
                         </div>
                     }
 
@@ -94,7 +103,7 @@ else
                     <input type="hidden" name="attemptId" value="@Model.AttemptId" />
                     <input type="hidden" name="taskId" value="@task.TaskId" />
 
-                    <p>Перетягни у правильному порядку:</p>
+                    <p class="text-muted">Перетягни у правильному порядку:</p>
 
                     <ul class="reorder-list">
                         @for (int i = 0; i < data.Items.Count; i++)
@@ -138,7 +147,7 @@ else
                             <div class="match-columns">
                                 <!-- LEFT -->
                                 <div>
-                                    <h5>Left</h5>
+                                    <h5>Ліворуч</h5>
                                     @for (int i = 0; i < data.Pairs.Count; i++)
                                     {
                                         <div class="left-item" data-index="@i">
@@ -149,7 +158,7 @@ else
 
                                 <!-- RIGHT -->
                                 <div>
-                                    <h5>Right</h5>
+                                    <h5>Праворуч</h5>
                                     @for (int i = 0; i < shuffledRight.Count; i++)
                                     {
                                         <div class="right-item" data-value="@shuffledRight[i]">
@@ -171,7 +180,9 @@ else
 
     <input type="hidden" id="attemptIdGlobal" value="@Model.AttemptId" />
 
-    <button type="button" id="finishBtn">Завершити</button>
+    <button type="button" id="finishBtn" class="btn btn-primary">
+        Завершити
+    </button>
 
-    <div id="finalResult" style="margin-top:20px;"></div>
+    <div id="finalResult" class="mt-3"></div>
 }

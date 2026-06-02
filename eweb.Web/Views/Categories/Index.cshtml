@@ -4,25 +4,31 @@
     ViewData["Title"] = "Категорії";
 }
 
-<h2>Категорії уроків</h2>
-
-<hr />
-
-<h4>Додати категорію</h4>
-
-<form asp-action="Create" method="post">
-    <div class="mb-3">
-        <input name="name" class="form-control" placeholder="Назва категорії" />
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Адміністрування</div>
+        <h1>Категорії уроків</h1>
+        <p>Створюйте та редагуйте теми для структурування уроків.</p>
     </div>
+</div>
 
-    <button type="submit" class="btn btn-primary mt-2">
-        Додати
-    </button>
-</form>
+<div class="content-panel">
+    <h4>Додати категорію</h4>
 
-<hr />
+    <form asp-action="Create" method="post" class="row g-2 align-items-end">
+        <div class="col-md-8">
+            <input name="name" class="form-control" placeholder="Назва категорії" />
+        </div>
 
-<h4>Список категорій</h4>
+        <div class="col-md-auto">
+            <button type="submit" class="btn btn-primary">
+                Додати
+            </button>
+        </div>
+    </form>
+</div>
+
+<h4 class="mb-3">Список категорій</h4>
 
 @if (TempData["Error"] != null)
 {
@@ -31,62 +37,59 @@
     </div>
 }
 
-<table class="table">
-    <thead>
-        <tr>
-            <th>Назва</th>
-            <th style="width:200px"></th>
-        </tr>
-    </thead>
-
-    <tbody>
-        @foreach (var category in Model)
-        {
+<div class="table-shell">
+    <table class="table">
+        <thead>
             <tr>
-                <td>
+                <th>Назва</th>
+                <th class="text-end">Стан</th>
+            </tr>
+        </thead>
 
-                    <form asp-action="Edit" method="post" class="d-flex">
-                        <input type="hidden" name="id" value="@category.Id" />
-
-                        <input name="name"
-                               value="@category.Name"
-                               class="form-control me-2" />
-
-                        <button type="submit"
-                                class="btn btn-warning btn-sm me-2">
-                            Зберегти
-                        </button>
-                    </form>
-
-                </td>
-
-                <td>
-
-                    @if (!category.Lessons.Any())
-                    {
-                        <form asp-action="Delete"
-                              method="post"
-                              onsubmit="return confirm('Видалити категорію?');">
-
+        <tbody>
+            @foreach (var category in Model)
+            {
+                <tr>
+                    <td>
+                        <form asp-action="Edit" method="post" class="d-flex gap-2">
                             <input type="hidden" name="id" value="@category.Id" />
 
+                            <input name="name"
+                                   value="@category.Name"
+                                   class="form-control" />
+
                             <button type="submit"
-                                    class="btn btn-danger btn-sm">
-                                Видалити
+                                    class="btn btn-outline-primary btn-sm">
+                                Зберегти
                             </button>
-
                         </form>
-                    }
-                    else
-                    {
-                        <span class="text-muted">Використовується</span>
-                    }
+                    </td>
 
-                </td>
-            </tr>
-        }
-    </tbody>
-</table>
+                    <td class="text-end">
+                        @if (!category.Lessons.Any())
+                        {
+                            <form asp-action="Delete"
+                                  method="post"
+                                  onsubmit="return confirm('Видалити категорію?');">
+
+                                <input type="hidden" name="id" value="@category.Id" />
+
+                                <button type="submit"
+                                        class="btn btn-outline-danger btn-sm">
+                                    Видалити
+                                </button>
+                            </form>
+                        }
+                        else
+                        {
+                            <span class="status-badge status-muted">Використовується</span>
+                        }
+                    </td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
 <a asp-controller="Lessons"
    asp-action="Index"
    class="btn btn-outline-secondary mt-3">

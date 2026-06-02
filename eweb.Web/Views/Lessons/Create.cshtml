@@ -2,8 +2,15 @@
 @{
     ViewData["Title"] = "Створити урок";
 }
-<div class="container mb-5">
-    <h2>Створити урок</h2>
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Адміністрування</div>
+        <h1>Створити урок</h1>
+        <p>Додайте матеріал уроку та тестові питання.</p>
+    </div>
+</div>
+
+<div class="content-panel mb-5">
     <div asp-validation-summary="All" class="text-danger mb-3"></div>
     <form asp-action="Create" method="post">
         <div class="mb-3">
@@ -45,10 +52,11 @@
             <label asp-for="IsPublished" class="form-check-label">Опублікувати урок</label>
         </div>
         <hr />
-        <h4>Тест</h4>
+        <h4 class="mb-3">Тест</h4>
         <div id="questionsContainer"></div>
-        <button type="button" id="addQuestionBtn" class="btn btn-secondary mb-3" onclick="addQuestion()">
-            + Додати питання
+        <button type="button" id="addQuestionBtn" class="btn btn-outline-primary mb-3" onclick="addQuestion()">
+            <i class="bi bi-plus-lg"></i>
+            Додати питання
         </button>
         <br />
         <button type="submit" class="btn btn-primary">Створити урок</button>
@@ -72,10 +80,10 @@
         if (getQuestionCount() >= 10) return;
         const qi = questionIndex;
         const html = `
-        <div class="card p-3 mb-3 question-block" id="question-${qi}">
+        <div class="question-block" id="question-${qi}">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <h5 class="mb-0">Питання</h5>
-                <button type="button" class="btn btn-sm btn-danger" onclick="removeQuestion(${qi})">Видалити</button>
+                <button type="button" class="btn btn-sm btn-outline-danger" onclick="removeQuestion(${qi})">Видалити</button>
             </div>
             <input name="Questions[${qi}].QuestionText" class="form-control mb-2" placeholder="Текст питання" />
             <div id="answers-${qi}"></div>

@@ -1,13 +1,24 @@
 ﻿@model eweb.Web.Models.Exercises.EditInteractiveExerciseViewModel
 
-<h2>Edit Interactive Exercise</h2>
+@{
+    ViewData["Title"] = "Редагувати вправу";
+}
 
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Адміністрування</div>
+        <h1>Редагувати вправу</h1>
+        <p>Оновіть завдання та параметри інтерактивної вправи.</p>
+    </div>
+</div>
+
+<div class="content-panel">
 <form asp-action="Edit" method="post">
     @Html.AntiForgeryToken()
 
     <div>
         <label>Урок</label>
-        <select asp-for="LessonId">
+        <select asp-for="LessonId" class="form-select">
             @foreach (var lesson in ViewBag.Lessons)
             {
                 <option value="@lesson.Id"
@@ -20,12 +31,12 @@
 
     <div>
         <label>Назва</label>
-        <input asp-for="Title" />
+        <input asp-for="Title" class="form-control" />
     </div>
 
     <div>
         <label>Опис</label>
-        <textarea asp-for="Description"></textarea>
+        <textarea asp-for="Description" class="form-control"></textarea>
     </div>
 
     <hr />
@@ -36,7 +47,7 @@
 
         @for (int i = 0; i < Model.Tasks.Count; i++)
         {
-            <div class="task-block" style="border:1px solid gray; padding:10px; margin-bottom:10px;">
+            <div class="task-block">
 
                 <input type="hidden" name="Tasks.Index" value="@i" />
 
@@ -44,7 +55,7 @@
 
                 <div>
                     <label>Тип</label>
-                    <select name="Tasks[@i].Type" class="task-type-select">
+                    <select name="Tasks[@i].Type" class="task-type-select form-select">
                         <option value="1" selected="@(Model.Tasks[i].Type == eweb.Domain.Entities.Exercises.ExerciseType.MultipleChoice)">
                             Вибір відповіді
                         </option>
@@ -62,7 +73,7 @@
 
                 <div>
                     <label>Питання</label>
-                    <input asp-for="Tasks[@i].QuestionText" />
+                    <input asp-for="Tasks[@i].QuestionText" class="form-control" />
                 </div>
 
                 <div>
@@ -181,24 +192,28 @@
                     </select>
                 </div>
 
-                <button type="button" class="remove-task-btn">Видалити</button>
+                <button type="button" class="remove-task-btn btn btn-outline-danger">Видалити</button>
 
             </div>
         }
 
     </div>
 
-    <button type="button" id="add-task-btn">+ Додати завдання</button>
+    <button type="button" id="add-task-btn" class="btn btn-outline-primary">
+        <i class="bi bi-plus-lg"></i>
+        Додати завдання
+    </button>
 
     <br /><br />
-    <button type="submit">Зберегти</button>
+    <button type="submit" class="btn btn-primary">Зберегти</button>
 
 </form>
+</div>
 
 <!-- ================= TEMPLATE ================= -->
 
 <script type="text/template" id="task-template">
-    <div class="task-block" style="border:1px solid gray; padding:10px; margin-bottom:10px;">
+    <div class="task-block">
 
         <input type="hidden" name="Tasks.Index" value="__index__" />
 
@@ -206,7 +221,7 @@
 
         <div>
             <label>Тип</label>
-            <select name="Tasks[__index__].Type" class="task-type-select">
+            <select name="Tasks[__index__].Type" class="task-type-select form-select">
                 <option value="1">Вибір відповіді</option>
                 <option value="2">Встановити порядок</option>
                 <option value="3">Зіставити пари</option>
@@ -301,7 +316,7 @@
         </div>
 
         <hr />
-        <button type="button" class="remove-task-btn">Видалити</button>
+        <button type="button" class="remove-task-btn btn btn-outline-danger">Видалити</button>
 
     </div>
 </script>
