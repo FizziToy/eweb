@@ -152,9 +152,83 @@
         document.getElementById('addQuestionBtn').disabled = getQuestionCount() >= 10;
     }
 
-    function removeQuestion(id) {
-        document.getElementById(id).remove();
+        function removeQuestion(id) {
+        const question = document.getElementById(id);
+
+        if (question) {
+            question.remove();
+        }
+
+        reindexQuestions();
         updateAddQuestionBtn();
+    }
+
+        function reindexQuestions() {
+        const questionBlocks = document.querySelectorAll('#questionsContainer .question-block');
+
+        questionBlocks.forEach((block, qi) => {
+            block.id = `question-block-${qi}`;
+
+            const hiddenQuestionId = block.querySelector('input[type=hidden][name$=".Id"]');
+            if (hiddenQuestionId) {
+                hiddenQuestionId.name = `Questions[${qi}].Id`;
+            }
+
+            const removeBtn = block.querySelector('.btn-danger');
+            if (removeBtn) {
+                removeBtn.setAttribute('onclick', `removeQuestion('question-block-${qi}')`);
+            }
+
+            const questionText = block.querySelector('input[name$=".QuestionText"]');
+            if (questionText) {
+                questionText.name = `Questions[${qi}].QuestionText`;
+            }
+
+            const answersContainer = block.querySelector('[id^="answers-"]');
+            if (answersContainer) {
+                answersContainer.id = `answers-${qi}`;
+            }
+
+            const addAnswerBtn = block.querySelector('[id^="addAnswerBtn-"]');
+            if (addAnswerBtn) {
+                addAnswerBtn.id = `addAnswerBtn-${qi}`;
+                addAnswerBtn.setAttribute('onclick', `addAnswer('${qi}')`);
+            }
+
+            block.querySelectorAll('.answer-row').forEach((row, ai) => {
+                const hiddenInputs = row.querySelectorAll('input[type=hidden]');
+                const idInput = hiddenInputs[0];
+                const isCorrectHidden = hiddenInputs[1];
+
+                const cb = row.querySelector('input[type=checkbox]');
+                const txt = row.querySelector('input:not([type=checkbox]):not([type=hidden])');
+
+                if (idInput) {
+                    idInput.name = `Questions[${qi}].Answers[${ai}].Id`;
+                }
+
+                if (cb) {
+                    cb.name = `Questions[${qi}].Answers[${ai}].IsCorrect`;
+                    cb.setAttribute('onchange', `updateCorrectCheckboxes('${qi}')`);
+                }
+
+                if (isCorrectHidden) {
+                    isCorrectHidden.name = `Questions[${qi}].Answers[${ai}].IsCorrect`;
+                }
+
+                if (txt) {
+                    txt.name = `Questions[${qi}].Answers[${ai}].Text`;
+                }
+
+                const removeAnswerBtn = row.querySelector('button');
+                if (removeAnswerBtn) {
+                    removeAnswerBtn.setAttribute('onclick', `removeAnswer(this,'${qi}')`);
+                }
+            });
+
+            updateAddAnswerBtn(qi);
+            updateCorrectCheckboxes(qi);
+        });
     }
 
     function addQuestion() {

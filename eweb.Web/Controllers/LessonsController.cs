@@ -161,6 +161,7 @@ public class LessonsController : Controller
 
     [HttpPost]
     [Authorize]
+    [ValidateAntiForgeryToken]
     public async Task<IActionResult> Details(LessonDetailsViewModel model)
     {
         var userId = _userManager.GetUserId(User);
@@ -372,14 +373,12 @@ public class LessonsController : Controller
                     $"Номер уроку має бути від 1 до {maxNumber}.");
             }
 
-            var lessonsToShift = await _context.Lessons
-                .Where(l => l.Number >= newNumber)
-                .OrderByDescending(l => l.Number)
-                .ToListAsync();
+            var categoryExists = await _context.LessonCategories
+                .AnyAsync(c => c.Id == model.CategoryId);
 
-            foreach (var l in lessonsToShift)
+            if (!categoryExists)
             {
-                l.SetNumber(l.Number + 1);
+                throw new InvalidOperationException("Обрана категорія не існує.");
             }
 
             var lesson = new Lesson(
@@ -391,17 +390,16 @@ public class LessonsController : Controller
                 model.CreatedAt
             );
 
-            if (model.Questions.Count > 10)
-                throw new InvalidOperationException("Урок не може мати більше 10 питань.");
+            var questionsFromModel = model.Questions ?? new List<QuestionInputModel>();
 
-            foreach (var q in model.Questions)
+            foreach (var q in questionsFromModel)
             {
                 if (string.IsNullOrWhiteSpace(q.QuestionText))
                     continue;
 
                 var question = new TheoryQuestion(q.QuestionText, lesson.Id);
 
-                foreach (var a in q.Answers)
+                foreach (var a in q.Answers ?? new List<AnswerInputModel>())
                 {
                     if (string.IsNullOrWhiteSpace(a.Text))
                         continue;
@@ -415,6 +413,16 @@ public class LessonsController : Controller
             if (model.IsPublished)
             {
                 lesson.Publish();
+            }
+
+            var lessonsToShift = await _context.Lessons
+                .Where(l => l.Number >= newNumber)
+                .OrderByDescending(l => l.Number)
+                .ToListAsync();
+
+            foreach (var l in lessonsToShift)
+            {
+                l.SetNumber(l.Number + 1);
             }
 
             _context.Lessons.Add(lesson);
@@ -505,11 +513,63 @@ public class LessonsController : Controller
 
         try
         {
-            if (!model.IsPublished && lesson.IsPublished)
-                lesson.Unpublish();
+            var lessonsCount = await _context.Lessons.CountAsync();
 
             var oldNumber = lesson.Number;
             var newNumber = model.Number;
+
+            if (newNumber < 1 || newNumber > lessonsCount)
+            {
+                throw new InvalidOperationException(
+                    $"Номер уроку має бути від 1 до {lessonsCount}.");
+            }
+
+            var categoryExists = await _context.LessonCategories
+                .AnyAsync(c => c.Id == model.CategoryId);
+
+            if (!categoryExists)
+            {
+                throw new InvalidOperationException("Обрана категорія не існує.");
+            }
+
+            var questionsFromModel = model.Questions ?? new List<QuestionEditModel>();
+
+            var lessonForValidation = new Lesson(
+                newNumber,
+                model.Title,
+                model.Description,
+                model.Content,
+                model.CategoryId,
+                lesson.CreatedAt
+            );
+
+            foreach (var q in questionsFromModel)
+            {
+                if (string.IsNullOrWhiteSpace(q.QuestionText))
+                    continue;
+
+                var question = new TheoryQuestion(q.QuestionText, lessonForValidation.Id);
+
+                foreach (var a in q.Answers ?? new List<AnswerEditModel>())
+                {
+                    if (string.IsNullOrWhiteSpace(a.Text))
+                        continue;
+
+                    question.AddAnswerOption(a.Text, a.IsCorrect);
+                }
+
+                lessonForValidation.AddQuestion(question);
+            }
+
+            if (model.IsPublished)
+            {
+                lessonForValidation.Publish();
+            }
+
+            if (!model.IsPublished && lesson.IsPublished)
+            {
+                lesson.Unpublish();
+            }
 
             lesson.Update(
                 lesson.Number,
@@ -524,7 +584,9 @@ public class LessonsController : Controller
                 if (newNumber < oldNumber)
                 {
                     var lessons = await _context.Lessons
-                        .Where(l => l.Number >= newNumber && l.Number < oldNumber && l.Id != lesson.Id)
+                        .Where(l => l.Number >= newNumber &&
+                                    l.Number < oldNumber &&
+                                    l.Id != lesson.Id)
                         .ToListAsync();
 
                     foreach (var l in lessons)
@@ -535,7 +597,9 @@ public class LessonsController : Controller
                 else
                 {
                     var lessons = await _context.Lessons
-                        .Where(l => l.Number <= newNumber && l.Number > oldNumber && l.Id != lesson.Id)
+                        .Where(l => l.Number <= newNumber &&
+                                    l.Number > oldNumber &&
+                                    l.Id != lesson.Id)
                         .ToListAsync();
 
                     foreach (var l in lessons)
@@ -552,15 +616,18 @@ public class LessonsController : Controller
                 lesson.RemoveQuestion(q.Id);
             }
 
-            foreach (var q in model.Questions)
+            foreach (var q in questionsFromModel)
             {
-                if (string.IsNullOrWhiteSpace(q.QuestionText)) continue;
+                if (string.IsNullOrWhiteSpace(q.QuestionText))
+                    continue;
 
-                var question = new TheoryQuestion(q.QuestionText, lesson!.Id);
+                var question = new TheoryQuestion(q.QuestionText, lesson.Id);
 
-                foreach (var a in q.Answers)
+                foreach (var a in q.Answers ?? new List<AnswerEditModel>())
                 {
-                    if (string.IsNullOrWhiteSpace(a.Text)) continue;
+                    if (string.IsNullOrWhiteSpace(a.Text))
+                        continue;
+
                     question.AddAnswerOption(a.Text, a.IsCorrect);
                 }
 
@@ -568,18 +635,22 @@ public class LessonsController : Controller
             }
 
             if (model.IsPublished)
+            {
                 lesson.Publish();
-            else if (lesson.IsPublished)
-                lesson.Unpublish();
+            }
 
             await _context.SaveChangesAsync();
+
             return RedirectToAction(nameof(Index));
         }
         catch (Exception ex)
         {
-            model.IsActuallyPublished = lesson.IsPublished;
             ModelState.AddModelError("", ex.Message);
+
+            model.IsActuallyPublished = lesson.IsPublished;
             model.Categories = await GetCategoriesAsync();
+            model.MaxNumber = await _context.Lessons.CountAsync();
+
             return View(model);
         }
     }

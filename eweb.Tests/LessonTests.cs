@@ -76,10 +76,7 @@ public class LessonTests
             CategoryId = category.Id,
             CreatedAt = new DateOnly(2026, 1, 1),
             IsPublished = true,
-            Questions = new List<QuestionInputModel>
-        {
-            CreateQuestionInput()
-        }
+            Questions = CreateTwoQuestionInputs()
         };
 
         var result = await controller.Create(model);
@@ -93,8 +90,8 @@ public class LessonTests
 
         Assert.NotNull(lesson);
         Assert.True(lesson!.IsPublished);
-        Assert.Single(lesson.Questions);
-        Assert.Equal(2, lesson.Questions.First().AnswerOptions.Count);
+        Assert.Equal(2, lesson.Questions.Count);
+        Assert.All(lesson.Questions, q => Assert.Equal(2, q.AnswerOptions.Count));
     }
 
     [Fact]
@@ -443,6 +440,129 @@ public class LessonTests
     }
 
     [Fact]
+    public async Task Edit_WithNonExistingCategory_ReturnsViewAndDoesNotChangeLesson()
+    {
+        using var db = CreateDbContext();
+        var category = AddCategory(db);
+
+        var lesson = AddLesson(db, category.Id, 1, false, "Початкова назва");
+
+        var controller = CreateController(db, isAdmin: true);
+
+        var model = new EditLessonViewModel
+        {
+            Id = lesson.Id,
+            Number = 1,
+            Title = "Змінена назва",
+            Description = "Новий опис",
+            Content = "Новий контент",
+            CategoryId = 999,
+            IsPublished = false,
+            Questions = CreateTwoQuestionEdits()
+        };
+
+        var result = await controller.Edit(model);
+
+        Assert.IsType<ViewResult>(result);
+        Assert.False(controller.ModelState.IsValid);
+
+        var lessonFromDb = await db.Lessons
+            .FirstAsync(x => x.Id == lesson.Id);
+
+        Assert.Equal("Початкова назва", lessonFromDb.Title);
+        Assert.Equal(category.Id, lessonFromDb.CategoryId);
+        Assert.Equal(1, lessonFromDb.Number);
+    }
+
+    [Fact]
+    public async Task Create_AfterDeleteMiddleQuestionAndAddNew_SavesReindexedQuestionsCorrectly()
+    {
+        using var db = CreateDbContext();
+        var category = AddCategory(db);
+
+        var controller = CreateController(db, isAdmin: true);
+
+        var model = new CreateLessonViewModel
+        {
+            Number = 1,
+            Title = "Урок після переіндексації",
+            Description = "Опис уроку",
+            Content = "Контент уроку",
+            CategoryId = category.Id,
+            CreatedAt = new DateOnly(2026, 1, 1),
+            IsPublished = true,
+
+            Questions = new List<QuestionInputModel>
+        {
+            CreateQuestionInput("Питання 1?"),
+            CreateQuestionInput("Питання 3?"),
+            CreateQuestionInput("Питання 4?")
+        }
+        };
+
+        var result = await controller.Create(model);
+
+        Assert.IsType<RedirectToActionResult>(result);
+
+        var lesson = await db.Lessons
+            .Include(x => x.Questions)
+            .ThenInclude(x => x.AnswerOptions)
+            .FirstOrDefaultAsync(x => x.Title == "Урок після переіндексації");
+
+        Assert.NotNull(lesson);
+        Assert.True(lesson!.IsPublished);
+
+        Assert.Equal(3, lesson.Questions.Count);
+
+        var questionTexts = lesson.Questions
+            .Select(x => x.QuestionText)
+            .ToList();
+
+        Assert.Contains("Питання 1?", questionTexts);
+        Assert.Contains("Питання 3?", questionTexts);
+        Assert.Contains("Питання 4?", questionTexts);
+
+        Assert.DoesNotContain("Питання 2?", questionTexts);
+
+        Assert.All(lesson.Questions, q =>
+        {
+            Assert.Equal(2, q.AnswerOptions.Count);
+            Assert.Contains(q.AnswerOptions, a => a.IsCorrect);
+            Assert.Contains(q.AnswerOptions, a => !a.IsCorrect);
+        });
+    }
+
+    [Fact]
+    public async Task Create_WithNonExistingCategory_ReturnsViewAndDoesNotCreateLesson()
+    {
+        using var db = CreateDbContext();
+        AddCategory(db);
+
+        var controller = CreateController(db, isAdmin: true);
+
+        var model = new CreateLessonViewModel
+        {
+            Number = 1,
+            Title = "Новий урок",
+            Description = "Опис уроку",
+            Content = "Контент уроку",
+            CategoryId = 999,
+            CreatedAt = new DateOnly(2026, 1, 1),
+            IsPublished = true,
+            Questions = CreateTwoQuestionInputs()
+        };
+
+        var result = await controller.Create(model);
+
+        Assert.IsType<ViewResult>(result);
+        Assert.False(controller.ModelState.IsValid);
+
+        var lessonsCount = await db.Lessons.CountAsync();
+
+        Assert.Equal(0, lessonsCount);
+    }
+
+    [Fact]
     public async Task Create_WithEmptyAnswerRows_IgnoresEmptyAnswersAndCreatesLesson()
     {
         using var db = CreateDbContext();
@@ -460,19 +580,20 @@ public class LessonTests
             CreatedAt = new DateOnly(2026, 1, 1),
             IsPublished = true,
             Questions = new List<QuestionInputModel>
-        {
-            new()
             {
-                QuestionText = "Питання?",
-                Answers = new List<AnswerInputModel>
+                new()
                 {
-                    new() { Text = "Правильно", IsCorrect = true },
-                    new() { Text = "Неправильно", IsCorrect = false },
-                    new() { Text = "", IsCorrect = true },
-                    new() { Text = "   ", IsCorrect = false }
-                }
+                    QuestionText = "Питання з пустими рядками?",
+                    Answers = new List<AnswerInputModel>
+                    {
+                        new() { Text = "Правильно", IsCorrect = true },
+                        new() { Text = "Неправильно", IsCorrect = false },
+                        new() { Text = "", IsCorrect = true },
+                        new() { Text = "   ", IsCorrect = false }
+                    }
+                },
+                CreateQuestionInput("Друге питання?")
             }
-        }
         };
 
         var result = await controller.Create(model);
@@ -486,8 +607,12 @@ public class LessonTests
 
         Assert.NotNull(lesson);
         Assert.True(lesson!.IsPublished);
-        Assert.Single(lesson.Questions);
-        Assert.Equal(2, lesson.Questions.First().AnswerOptions.Count);
+        Assert.Equal(2, lesson.Questions.Count);
+
+        var questionWithEmptyRows = Assert.Single(
+            lesson.Questions.Where(q => q.QuestionText == "Питання з пустими рядками?"));
+
+        Assert.Equal(2, questionWithEmptyRows.AnswerOptions.Count);
     }
 
     [Fact]
@@ -720,6 +845,95 @@ public class LessonTests
             "1:Урок 1",
             "2:Урок 2",
             "3:Новий останній урок"
+            },
+            ordered);
+    }
+
+    [Fact]
+    public async Task Edit_WhenErrorHappens_DoesNotShiftExistingLessonNumbers()
+    {
+        using var db = CreateDbContext();
+        var category = AddCategory(db);
+
+        AddLesson(db, category.Id, 1, false, "Урок 1");
+        var lesson2 = AddLesson(db, category.Id, 2, false, "Урок 2");
+        AddLesson(db, category.Id, 3, false, "Урок 3");
+
+        var controller = CreateController(db, isAdmin: true);
+
+        var model = new EditLessonViewModel
+        {
+            Id = lesson2.Id,
+            Number = 1,
+            Title = "Поганий урок",
+            Description = "Опис",
+            Content = "Контент",
+            CategoryId = category.Id,
+            IsPublished = true,
+            Questions = new List<QuestionEditModel>()
+        };
+
+        var result = await controller.Edit(model);
+
+        Assert.IsType<ViewResult>(result);
+        Assert.False(controller.ModelState.IsValid);
+
+        var ordered = await db.Lessons
+            .OrderBy(x => x.Number)
+            .Select(x => $"{x.Number}:{x.Title}")
+            .ToListAsync();
+
+        Assert.Equal(
+            new[]
+            {
+            "1:Урок 1",
+            "2:Урок 2",
+            "3:Урок 3"
+            },
+            ordered);
+    }
+
+    [Fact]
+    public async Task Edit_WithNumberGreaterThanLessonsCount_ReturnsViewAndDoesNotChangeNumbers()
+    {
+        using var db = CreateDbContext();
+        var category = AddCategory(db);
+
+        var lesson1 = AddLesson(db, category.Id, 1, false, "Урок 1");
+        AddLesson(db, category.Id, 2, false, "Урок 2");
+
+        var controller = CreateController(db, isAdmin: true);
+
+        var model = new EditLessonViewModel
+        {
+            Id = lesson1.Id,
+            Number = 10,
+            Title = "Змінена назва",
+            Description = "Опис",
+            Content = "Контент",
+            CategoryId = category.Id,
+            IsPublished = false,
+            Questions = new List<QuestionEditModel>
+        {
+            CreateQuestionEdit()
+        }
+        };
+
+        var result = await controller.Edit(model);
+
+        Assert.IsType<ViewResult>(result);
+        Assert.False(controller.ModelState.IsValid);
+
+        var ordered = await db.Lessons
+            .OrderBy(x => x.Number)
+            .Select(x => $"{x.Number}:{x.Title}")
+            .ToListAsync();
+
+        Assert.Equal(
+            new[]
+            {
+            "1:Урок 1",
+            "2:Урок 2"
             },
             ordered);
     }
@@ -1192,6 +1406,25 @@ public class LessonTests
     }
 
     [Fact]
+    public void Lesson_Number_HasUniqueIndex()
+    {
+        using var db = CreateDbContext();
+
+        var entityType = db.Model.FindEntityType(typeof(Lesson));
+
+        Assert.NotNull(entityType);
+
+        var index = entityType!
+            .GetIndexes()
+            .FirstOrDefault(i =>
+                i.Properties.Count == 1 &&
+                i.Properties[0].Name == nameof(Lesson.Number));
+
+        Assert.NotNull(index);
+        Assert.True(index!.IsUnique);
+    }
+
+    [Fact]
     public void DeleteConfirmed_PostAction_MustRequireAdminRole()
     {
         var method = typeof(LessonsController)
@@ -1228,11 +1461,11 @@ public class LessonTests
     }
 
     private static Lesson AddLesson(
-        ApplicationDbContext db,
-        int categoryId,
-        int number,
-        bool publish,
-        string title)
+    ApplicationDbContext db,
+    int categoryId,
+    int number,
+    bool publish,
+    string title)
     {
         var lesson = new Lesson(
             number,
@@ -1242,10 +1475,13 @@ public class LessonTests
             categoryId,
             new DateOnly(2026, 1, 1));
 
-        lesson.AddQuestion(CreateValidQuestion());
+        lesson.AddQuestion(CreateValidQuestion("Питання 1?"));
 
         if (publish)
+        {
+            lesson.AddQuestion(CreateValidQuestion("Питання 2?"));
             lesson.Publish();
+        }
 
         db.Lessons.Add(lesson);
         db.SaveChanges();
@@ -1274,6 +1510,15 @@ public class LessonTests
                 new() { Text = "Неправильно", IsCorrect = false }
             }
         };
+    }
+
+    private static List<QuestionInputModel> CreateTwoQuestionInputs()
+    {
+        return new List<QuestionInputModel>
+    {
+        CreateQuestionInput("Питання 1?"),
+        CreateQuestionInput("Питання 2?")
+    };
     }
 
     private static QuestionEditModel CreateQuestionEdit()
@@ -1402,6 +1647,32 @@ public class LessonTests
             blocked,
             $"Очікувалось блокування доступу, але отримано: {result.GetType().Name}");
     }
+
+    private static List<QuestionEditModel> CreateTwoQuestionEdits()
+    {
+        return new List<QuestionEditModel>
+    {
+        new()
+        {
+            QuestionText = "Питання 1?",
+            Answers = new List<AnswerEditModel>
+            {
+                new() { Text = "Правильно", IsCorrect = true },
+                new() { Text = "Неправильно", IsCorrect = false }
+            }
+        },
+        new()
+        {
+            QuestionText = "Питання 2?",
+            Answers = new List<AnswerEditModel>
+            {
+                new() { Text = "Правильно", IsCorrect = true },
+                new() { Text = "Неправильно", IsCorrect = false }
+            }
+        }
+    };
+    }
+
 
     private sealed class TestUserStore : IUserStore<ApplicationUser>
     {

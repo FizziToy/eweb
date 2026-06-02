@@ -2,6 +2,8 @@
 
 public class Lesson
 {
+    private const int MinQuestionsToPublish = 2;
+
     private const int MaxQuestions = 10;
 
     private readonly List<TheoryQuestion> _questions = new();
@@ -115,8 +117,9 @@ public class Lesson
         if (string.IsNullOrWhiteSpace(Content))
             throw new InvalidOperationException("Контент уроку не може бути порожнім.");
 
-        if (!_questions.Any())
-            throw new InvalidOperationException("Урок не можна опублікувати без тестових питань.");
+        if (_questions.Count < MinQuestionsToPublish)
+            throw new InvalidOperationException(
+                $"Урок можна опублікувати лише якщо є мінімум {MinQuestionsToPublish} тестові питання.");
 
         IsPublished = true;
     }

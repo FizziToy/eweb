@@ -29,6 +29,10 @@ public class ApplicationDbContext(DbContextOptions<ApplicationDbContext> options
         base.OnModelCreating(builder);
 
         builder.Entity<Lesson>().HasKey(l => l.Id);
+
+        builder.Entity<Lesson>()
+            .HasIndex(l => l.Number)
+            .IsUnique();
         builder.Entity<TheoryQuestion>().HasKey(q => q.Id);
         builder.Entity<AnswerOption>().HasKey(a => a.Id);
 
