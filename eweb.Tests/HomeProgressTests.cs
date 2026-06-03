@@ -1,20 +1,18 @@
-﻿using System.Security.Claims;
+using System.Security.Claims;
 using eweb.Domain.Entities;
 using eweb.Domain.Entities.Progress;
 using eweb.Domain.Services;
 using eweb.Infrastructure.Data;
-using eweb.Infrastructure.Identity;
 using eweb.Web.Controllers;
+using eweb.Web.Models.Home;
 using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
-using Microsoft.Extensions.Options;
 
 namespace eweb.Tests;
 
-public class ProgressControllerTests
+public class HomeProgressTests
 {
     private const string UserId = "user-1";
 
@@ -64,16 +62,15 @@ public class ProgressControllerTests
 
         var result = await controller.Index();
 
-        Assert.IsType<ViewResult>(result);
-
-        var progress = Assert.IsType<double>(controller.ViewBag.Progress);
+        var viewResult = Assert.IsType<ViewResult>(result);
+        var model = Assert.IsType<HomeViewModel>(viewResult.Model);
 
         // Має рахуватися тільки:
         // відкриті уроки: 1 з 1 опублікованого = 10%
         // пройдені питання: 1 з 2 питань опублікованого уроку = 17.5%
         // вправ немає = 0%
         // Разом: 27.5
-        Assert.Equal(27.5, progress);
+        Assert.Equal(27.5, model.ProgressPercent);
     }
 
     private static ApplicationDbContext CreateDbContext()
@@ -85,11 +82,11 @@ public class ProgressControllerTests
         return new ApplicationDbContext(options);
     }
 
-    private static ProgressController CreateController(ApplicationDbContext db)
+    private static HomeController CreateController(ApplicationDbContext db)
     {
-        var controller = new ProgressController(
+        var controller = new HomeController(
+            new LoggerFactory().CreateLogger<HomeController>(),
             db,
-            CreateUserManager(),
             new ProgressCalculator());
 
         controller.ControllerContext = new ControllerContext
@@ -149,108 +146,5 @@ public class ProgressControllerTests
         question.AddAnswerOption("Неправильно", false);
 
         return question;
-    }
-
-    private static UserManager<ApplicationUser> CreateUserManager()
-    {
-        return new UserManager<ApplicationUser>(
-            new TestUserStore(),
-            Options.Create(new IdentityOptions()),
-            new PasswordHasher<ApplicationUser>(),
-            Array.Empty<IUserValidator<ApplicationUser>>(),
-            Array.Empty<IPasswordValidator<ApplicationUser>>(),
-            new UpperInvariantLookupNormalizer(),
-            new IdentityErrorDescriber(),
-            null!,
-            new LoggerFactory().CreateLogger<UserManager<ApplicationUser>>());
-    }
-
-    private sealed class TestUserStore : IUserStore<ApplicationUser>
-    {
-        public void Dispose()
-        {
-        }
-
-        public Task<string> GetUserIdAsync(
-            ApplicationUser user,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(user.Id);
-        }
-
-        public Task<string?> GetUserNameAsync(
-            ApplicationUser user,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(user.UserName);
-        }
-
-        public Task SetUserNameAsync(
-            ApplicationUser user,
-            string? userName,
-            CancellationToken cancellationToken)
-        {
-            user.UserName = userName;
-            return Task.CompletedTask;
-        }
-
-        public Task<string?> GetNormalizedUserNameAsync(
-            ApplicationUser user,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(user.NormalizedUserName);
-        }
-
-        public Task SetNormalizedUserNameAsync(
-            ApplicationUser user,
-            string? normalizedName,
-            CancellationToken cancellationToken)
-        {
-            user.NormalizedUserName = normalizedName;
-            return Task.CompletedTask;
-        }
-
-        public Task<IdentityResult> CreateAsync(
-            ApplicationUser user,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(IdentityResult.Success);
-        }
-
-        public Task<IdentityResult> UpdateAsync(
-            ApplicationUser user,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(IdentityResult.Success);
-        }
-
-        public Task<IdentityResult> DeleteAsync(
-            ApplicationUser user,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult(IdentityResult.Success);
-        }
-
-        public Task<ApplicationUser?> FindByIdAsync(
-            string userId,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult<ApplicationUser?>(new ApplicationUser
-            {
-                Id = userId,
-                UserName = "user@eweb.com"
-            });
-        }
-
-        public Task<ApplicationUser?> FindByNameAsync(
-            string normalizedUserName,
-            CancellationToken cancellationToken)
-        {
-            return Task.FromResult<ApplicationUser?>(new ApplicationUser
-            {
-                Id = UserId,
-                UserName = normalizedUserName
-            });
-        }
     }
 }

@@ -3,6 +3,9 @@
 @{
     ViewData["Title"] = "Вправи";
     var completedIds = ViewBag.CompletedIds as HashSet<int> ?? new HashSet<int>();
+    var completed = Model.Count(exercise => completedIds.Contains(exercise.Id));
+    var total = Model.Count;
+    var pct = total > 0 ? (int)Math.Round(completed * 100.0 / total) : 0;
 }
 
 <div class="page-header">
@@ -28,6 +31,19 @@
 }
 else
 {
+    <div class="lessons-progress-banner">
+        <div class="progress-label">Прогрес вправ</div>
+
+        <div class="progress-meta">
+            <span>@completed з @total вправ виконано</span>
+            <span>@pct%</span>
+        </div>
+
+        <div class="lessons-progress-track">
+            <div class="lessons-progress-fill" data-pct="@pct" style="width:@pct%"></div>
+        </div>
+    </div>
+
     <div class="lessons-grid">
         @foreach (var exercise in Model)
         {

@@ -56,6 +56,12 @@
                     </td>
                     <td>
                         <div class="action-row justify-content-end">
+                            <a asp-action="Details"
+                               asp-route-id="@ex.Id"
+                               class="btn btn-sm btn-outline-primary">
+                                Переглянути
+                            </a>
+
                             @if (!ex.IsPublished)
                             {
                                 <form asp-action="Publish" method="post">

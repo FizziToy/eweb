@@ -1,0 +1,124 @@
+@model eweb.Domain.Entities.Exercises.InteractiveExercise
+@using System.Text.Json
+@using eweb.Domain.Entities.Exercises
+@using eweb.Web.Models.ExercisePlay
+
+@{
+    ViewData["Title"] = "Перегляд вправи";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Перегляд вправи</div>
+        <h1>@Model.Title</h1>
+        @if (!string.IsNullOrWhiteSpace(Model.Description))
+        {
+            <p>@Model.Description</p>
+        }
+    </div>
+
+    <a asp-action="Index" class="btn btn-outline-secondary">
+        Назад до вправ
+    </a>
+</div>
+
+<div class="content-panel">
+    <div class="d-flex flex-wrap gap-2">
+        <span class="status-badge status-muted">Урок @Model.LessonId</span>
+        <span class="status-badge status-muted">Порядок @Model.Order</span>
+        @if (Model.IsPublished)
+        {
+            <span class="status-badge status-success">Опубліковано</span>
+        }
+        else
+        {
+            <span class="status-badge status-muted">Чернетка</span>
+        }
+    </div>
+</div>
+
+@foreach (var task in Model.Tasks.OrderBy(t => t.Order))
+{
+    <div class="content-panel run-task">
+        <div class="lesson-card-top mb-3">
+            <h4 class="mb-0">@task.Order. @task.QuestionText</h4>
+            <span class="status-badge status-muted">@task.StarsReward зір.</span>
+        </div>
+
+        @if (task.Type == ExerciseType.MultipleChoice)
+        {
+            var data = JsonSerializer.Deserialize<MultipleChoiceData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new MultipleChoiceData();
+
+            <div class="option-grid">
+                @foreach (var option in data.Options)
+                {
+                    <div class="reorder-list-item @(option.IsCorrect ? "correct" : "")">
+                        @option.Text
+                        @if (option.IsCorrect)
+                        {
+                            <span class="status-badge status-success ms-2">Правильна</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (task.Type == ExerciseType.FillGaps)
+        {
+            var data = JsonSerializer.Deserialize<FillGapsData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new FillGapsData();
+
+            <div class="option-grid">
+                @for (int i = 0; i < data.Options.Count; i++)
+                {
+                    <div class="reorder-list-item @(i == data.CorrectOptionIndex ? "correct" : "")">
+                        @data.Options[i]
+                        @if (i == data.CorrectOptionIndex)
+                        {
+                            <span class="status-badge status-success ms-2">Правильна</span>
+                        }
+                    </div>
+                }
+            </div>
+        }
+        else if (task.Type == ExerciseType.Reorder)
+        {
+            var data = JsonSerializer.Deserialize<ReorderData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new ReorderData();
+
+            <p class="text-muted">Правильний порядок:</p>
+            <ol class="reorder-list">
+                @foreach (var index in (data.CorrectOrder ?? string.Empty)
+                    .Split(',', StringSplitOptions.RemoveEmptyEntries | StringSplitOptions.TrimEntries)
+                    .Select(x => int.TryParse(x, out var value) ? value : 0))
+                {
+                    var itemIndex = index - 1;
+                    if (itemIndex >= 0 && itemIndex < data.Items.Count)
+                    {
+                        <li>@data.Items[itemIndex]</li>
+                    }
+                }
+            </ol>
+        }
+        else if (task.Type == ExerciseType.MatchPairs)
+        {
+            var data = JsonSerializer.Deserialize<MatchPairsData>(
+                task.DataJson,
+                new JsonSerializerOptions { PropertyNameCaseInsensitive = true }) ?? new MatchPairsData();
+
+            <div class="pair-grid">
+                @foreach (var pair in data.Pairs)
+                {
+                    <div class="reorder-list-item correct">
+                        <strong>@pair.Left</strong>
+                        <span class="text-muted">-</span>
+                        <span>@pair.Right</span>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+}

@@ -1,0 +1,82 @@
+@page
+@model IndexModel
+@{
+    ViewData["Title"] = "Профіль";
+}
+
+<div class="profile-page">
+    <section class="profile-hero">
+        <div class="profile-avatar" aria-hidden="true">
+            <i class="bi bi-person"></i>
+        </div>
+
+        <div>
+            <div class="page-kicker">Акаунт</div>
+            <h1>Профіль користувача</h1>
+            <p>Керуйте основними даними акаунта для навчання.</p>
+        </div>
+    </section>
+
+    @if (!string.IsNullOrWhiteSpace(Model.StatusMessage))
+    {
+        <div class="alert alert-success profile-alert">
+            @Model.StatusMessage
+        </div>
+    }
+
+    <section class="profile-grid">
+        <article class="profile-card profile-card-main">
+            <div class="profile-card-header">
+                <div>
+                    <h2>Основна інформація</h2>
+                    <p>Ці дані використовуються для входу та ідентифікації акаунта.</p>
+                </div>
+                <span class="status-badge status-success">Активний</span>
+            </div>
+
+            <div class="profile-info-list">
+                <div class="profile-info-item">
+                    <span>Email</span>
+                    <strong>@Model.Username</strong>
+                </div>
+
+                <div class="profile-info-item">
+                    <span>Телефон</span>
+                    <strong>@(string.IsNullOrWhiteSpace(Model.Input.PhoneNumber) ? "Не вказано" : Model.Input.PhoneNumber)</strong>
+                </div>
+            </div>
+        </article>
+
+        <article class="profile-card">
+            <div class="profile-card-header">
+                <div>
+                    <h2>Редагування</h2>
+                    <p>Оновіть контактний телефон, якщо він потрібен.</p>
+                </div>
+            </div>
+
+            <form id="profile-form" method="post">
+                <div asp-validation-summary="ModelOnly" class="text-danger" role="alert"></div>
+
+                <div class="auth-field">
+                    <label>Ім'я користувача</label>
+                    <input class="form-control" value="@Model.Username" disabled />
+                </div>
+
+                <div class="auth-field">
+                    <label asp-for="Input.PhoneNumber">Телефон</label>
+                    <input asp-for="Input.PhoneNumber" class="form-control" autocomplete="tel" placeholder="Введіть номер телефону" />
+                    <span asp-validation-for="Input.PhoneNumber" class="text-danger"></span>
+                </div>
+
+                <button id="update-profile-button" type="submit" class="auth-submit">
+                    Зберегти зміни
+                </button>
+            </form>
+        </article>
+    </section>
+</div>
+
+@section Scripts {
+    <partial name="_ValidationScriptsPartial" />
+}

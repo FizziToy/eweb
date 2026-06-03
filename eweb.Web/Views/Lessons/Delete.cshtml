@@ -13,9 +13,18 @@
 </div>
 
 <div class="content-panel">
-    <div class="alert alert-warning">
-        Цю дію не можна скасувати.
-    </div>
+    @if (Model.IsPublished)
+    {
+        <div class="alert alert-danger">
+            Опублікований урок не можна видалити. Спочатку зніміть його з публікації.
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-warning">
+            Цю дію не можна скасувати.
+        </div>
+    }
 
     <dl class="row mb-4">
         <dt class="col-sm-3">Номер</dt>
@@ -45,7 +54,9 @@
 
     <form asp-action="Delete" method="post" class="action-row">
         <input type="hidden" asp-for="Id" />
-        <button type="submit" class="btn btn-danger">Видалити</button>
+        <button type="submit" class="btn btn-danger" disabled="@Model.IsPublished">
+            Видалити
+        </button>
         <a asp-action="Index" class="btn btn-outline-secondary">Назад</a>
     </form>
 </div>

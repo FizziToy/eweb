@@ -23,9 +23,24 @@ public class InteractiveExercisesController : Controller
     public async Task<IActionResult> Index()
     {
         var exercises = await _context.InteractiveExercises
+            .OrderBy(e => e.LessonId)
+            .ThenBy(e => e.Order)
             .ToListAsync();
 
         return View(exercises);
+    }
+
+    [HttpGet]
+    public async Task<IActionResult> Details(int id)
+    {
+        var exercise = await _context.InteractiveExercises
+            .Include(e => e.Tasks)
+            .FirstOrDefaultAsync(e => e.Id == id);
+
+        if (exercise == null)
+            return NotFound();
+
+        return View(exercise);
     }
 
     // CREATE (GET)
@@ -232,6 +247,12 @@ public class InteractiveExercisesController : Controller
 
         if (exercise == null)
             return NotFound();
+
+        if (exercise.IsPublished)
+        {
+            TempData["Error"] = "Опубліковану вправу не можна видалити. Спочатку зніміть її з публікації.";
+            return RedirectToAction(nameof(Index));
+        }
 
         int lessonId = exercise.LessonId;
 

@@ -110,15 +110,20 @@ public class LessonsController : Controller
 
         if (!isAdmin && userId != null)
         {
-            var exists = await _context.UserLessonProgresses
-                .AnyAsync(x => x.UserId == userId && x.LessonId == id);
+            var progress = await _context.UserLessonProgresses
+                .FirstOrDefaultAsync(x => x.UserId == userId && x.LessonId == id);
 
-            if (!exists)
+            if (progress == null)
             {
-                var progress = new UserLessonProgress(userId, id);
+                progress = new UserLessonProgress(userId, id);
                 _context.UserLessonProgresses.Add(progress);
-                await _context.SaveChangesAsync();
             }
+            else
+            {
+                progress.MarkViewed();
+            }
+
+            await _context.SaveChangesAsync();
 
             attemptsCount = await _context.LessonTestAttempts
                 .CountAsync(x => x.UserId == userId && x.LessonId == id);
@@ -196,7 +201,7 @@ public class LessonsController : Controller
         }
 
         int attemptsCount = 0;
-        int minAttempts = 3;
+        int minAttempts = 8;
         int maxAttempts = 10;
 
         if (!isAdmin)
@@ -666,6 +671,12 @@ public class LessonsController : Controller
         if (lesson == null)
             return NotFound();
 
+        if (lesson.IsPublished)
+        {
+            TempData["Error"] = "Опублікований урок не можна видалити. Спочатку зніміть його з публікації.";
+            return RedirectToAction(nameof(Index));
+        }
+
         return View(lesson);
     }
 
@@ -678,6 +689,12 @@ public class LessonsController : Controller
 
         if (lesson == null)
             return NotFound();
+
+        if (lesson.IsPublished)
+        {
+            TempData["Error"] = "Опублікований урок не можна видалити. Спочатку зніміть його з публікації.";
+            return RedirectToAction(nameof(Index));
+        }
 
         var deletedNumber = lesson.Number;
 
@@ -693,6 +710,56 @@ public class LessonsController : Controller
         }
 
         await _context.SaveChangesAsync();
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Publish(int id)
+    {
+        var lesson = await _context.Lessons
+            .Include(l => l.Questions)
+            .ThenInclude(q => q.AnswerOptions)
+            .FirstOrDefaultAsync(l => l.Id == id);
+
+        if (lesson == null)
+            return NotFound();
+
+        try
+        {
+            lesson.Publish();
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
+
+        return RedirectToAction(nameof(Index));
+    }
+
+    [HttpPost]
+    [Authorize(Roles = RoleNames.Admin)]
+    [ValidateAntiForgeryToken]
+    public async Task<IActionResult> Unpublish(int id)
+    {
+        var lesson = await _context.Lessons
+            .FirstOrDefaultAsync(l => l.Id == id);
+
+        if (lesson == null)
+            return NotFound();
+
+        try
+        {
+            lesson.Unpublish();
+            await _context.SaveChangesAsync();
+        }
+        catch (Exception ex)
+        {
+            TempData["Error"] = ex.Message;
+        }
 
         return RedirectToAction(nameof(Index));
     }

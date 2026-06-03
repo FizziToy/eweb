@@ -2,54 +2,170 @@
 
 @{
     ViewData["Title"] = "Головна";
+    var isAdmin = User.IsInRole("Admin");
+    var level = Model.ProgressPercent >= 70
+        ? "Просунутий"
+        : Model.ProgressPercent >= 35
+            ? "Середній"
+            : "Початковий";
+    var progressPercent = Math.Round(Model.ProgressPercent);
 }
 
-<div class="page-header">
-    <div>
-        <div class="page-kicker">Навчальна панель</div>
-        <h1>Центр вивчення C#</h1>
-        <p>Вивчайте C# від основ і відстежуйте власний прогрес.</p>
-    </div>
-</div>
+<div class="hub-page">
+    <section class="hub-hero" aria-labelledby="home-title">
+        <h1 id="home-title">Ласкаво просимо до C# Learning Hub</h1>
+        <p>Вивчайте програмування C# від основ до складніших тем</p>
+    </section>
 
-<div class="dashboard-grid">
-    <div class="dashboard-card">
-        <div class="d-flex justify-content-between align-items-start">
+    <section class="hub-stats" aria-label="Поточний прогрес">
+        <article class="hub-stat-card">
             <div>
-                <div class="metric-label">Відкриті уроки</div>
-                <div class="metric-value">@Model.OpenLessons/@Model.TotalLessons</div>
+                <span>Доступні уроки</span>
+                <strong>@Model.OpenLessons/@Model.TotalLessons</strong>
             </div>
-            <i class="bi bi-book dashboard-icon"></i>
-        </div>
-    </div>
+            <i class="bi bi-book"></i>
+        </article>
 
-    <div class="dashboard-card">
-        <div class="d-flex justify-content-between align-items-start">
+        <article class="hub-stat-card">
             <div>
-                <div class="metric-label">Виконані завдання</div>
-                <div class="metric-value">@Model.ExercisesSolved</div>
+                <span>Виконано вправ</span>
+                <strong>@Model.ExercisesSolved</strong>
             </div>
-            <i class="bi bi-code-slash dashboard-icon"></i>
-        </div>
-    </div>
+            <i class="bi bi-code"></i>
+        </article>
 
-    <div class="dashboard-card">
-        <div class="d-flex justify-content-between align-items-start">
+        <article class="hub-stat-card">
             <div>
-                <div class="metric-label">Отримані зірки</div>
-                <div class="metric-value">@Model.StarsEarned/@Model.StarsTotal</div>
+                <span>Поточний рівень</span>
+                <strong>@level</strong>
             </div>
-            <i class="bi bi-star dashboard-icon"></i>
-        </div>
-    </div>
+            <i class="bi bi-trophy"></i>
+        </article>
 
-    <div class="dashboard-card">
-        <div class="d-flex justify-content-between align-items-start">
+        <article class="hub-stat-card">
             <div>
-                <div class="metric-label">Прогрес</div>
-                <div class="metric-value">@Model.ProgressPercent%</div>
+                <span>Прогрес</span>
+                <strong>@progressPercent%</strong>
             </div>
-            <i class="bi bi-graph-up-arrow dashboard-icon"></i>
-        </div>
-    </div>
+            <i class="bi bi-graph-up-arrow"></i>
+        </article>
+    </section>
+
+    <section class="hub-actions" aria-label="Швидкі дії">
+        <a class="hub-action-card" asp-controller="Lessons" asp-action="Index">
+            <span class="hub-action-icon"><i class="bi bi-book"></i></span>
+            <span>
+                <strong>Почати навчання</strong>
+                <small>Переглянути уроки та матеріали з C#</small>
+            </span>
+        </a>
+
+        <a class="hub-action-card" asp-controller="ExercisePlay" asp-action="Index">
+            <span class="hub-action-icon"><i class="bi bi-trophy"></i></span>
+            <span>
+                <strong>Інтерактивна практика</strong>
+                <small>Тести, завдання та тренування</small>
+            </span>
+        </a>
+
+        <a class="hub-action-card" asp-controller="ExercisePlay" asp-action="Index">
+            <span class="hub-action-icon"><i class="bi bi-code"></i></span>
+            <span>
+                <strong>Практичні вправи</strong>
+                <small>Закріплюйте теми на завданнях</small>
+            </span>
+        </a>
+    </section>
+
+    @if (isAdmin)
+    {
+        <section class="hub-panel">
+            <div class="hub-panel-header">
+                <h2>Адміністративна панель</h2>
+                <p>Переглядайте загальну аналітику та прогрес зареєстрованих учнів.</p>
+            </div>
+
+            <div class="hub-actions admin-hub-actions">
+                <a class="hub-action-card" asp-controller="Analytics" asp-action="Index">
+                    <span class="hub-action-icon"><i class="bi bi-graph-up-arrow"></i></span>
+                    <span>
+                        <strong>Аналітика</strong>
+                        <small>Графіки успішності, спроби та слабкі теми</small>
+                    </span>
+                </a>
+
+                <a class="hub-action-card" asp-controller="Analytics" asp-action="Students">
+                    <span class="hub-action-icon"><i class="bi bi-people"></i></span>
+                    <span>
+                        <strong>Статистика учнів</strong>
+                        <small>Усі зареєстровані учні та їхній прогрес</small>
+                    </span>
+                </a>
+            </div>
+        </section>
+    }
+    else
+    {
+        <section class="hub-panel">
+            <div class="hub-panel-header">
+                <h2>Продовжити навчання</h2>
+                <p>Поверніться до тем, на яких зупинилися</p>
+            </div>
+
+            <div class="hub-progress-list">
+                @if (Model.LastViewedLesson != null)
+                {
+                    <a class="hub-progress-item" asp-controller="Lessons" asp-action="Details" asp-route-id="@Model.LastViewedLesson.LessonId">
+                        <span class="hub-progress-type">Останній переглянутий урок</span>
+                        <span class="hub-progress-title">@Model.LastViewedLesson.Title</span>
+                        <span class="hub-progress-caption">@Model.LastViewedLesson.Description</span>
+                        <span class="hub-progress-track" aria-hidden="true">
+                            <span style="width: @Model.LastViewedLesson.ProgressPercent%"></span>
+                        </span>
+                        <span class="hub-progress-percent">@Model.LastViewedLesson.ProgressPercent%</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                }
+
+                @if (Model.LastOpenedExercise != null)
+                {
+                    <a class="hub-progress-item" asp-controller="ExercisePlay" asp-action="Run" asp-route-attemptId="@Model.LastOpenedExercise.AttemptId">
+                        <span class="hub-progress-type">Остання відкрита вправа</span>
+                        <span class="hub-progress-title">@Model.LastOpenedExercise.Title</span>
+                        <span class="hub-progress-caption">@Model.LastOpenedExercise.Description</span>
+                        <span class="hub-progress-track" aria-hidden="true">
+                            <span style="width: @Model.LastOpenedExercise.ProgressPercent%"></span>
+                        </span>
+                        <span class="hub-progress-percent">@Model.LastOpenedExercise.ProgressPercent%</span>
+                        <i class="bi bi-arrow-right"></i>
+                    </a>
+                }
+
+                @if (Model.LastViewedLesson == null && Model.LastOpenedExercise == null)
+                {
+                    <div class="hub-progress-empty">
+                        <strong>Почніть з першого уроку або вправи</strong>
+                        <span>Після перегляду уроку чи відкриття вправи вони з'являться тут.</span>
+                    </div>
+                }
+            </div>
+        </section>
+
+        <section class="hub-path">
+            <h2>Ваш шлях вивчення C#</h2>
+            <p>Рухайтесь за структурованою програмою і поступово поглиблюйте знання</p>
+
+            <ul>
+                <li><span></span>Основи: змінні, типи даних, оператори</li>
+                <li><span></span>Керування потоком: if/else, switch, цикли</li>
+                <li><span></span>Структури даних: масиви, списки, словники</li>
+                <li><span></span>ООП: класи, об'єкти, наслідування</li>
+            </ul>
+
+            <a class="hub-path-button" asp-controller="Lessons" asp-action="Index">
+                Переглянути всі уроки
+                <i class="bi bi-arrow-right"></i>
+            </a>
+        </section>
+    }
 </div>

@@ -26,6 +26,13 @@
 
     @if (isAdmin)
     {
+        @if (TempData["Error"] != null)
+        {
+            <div class="alert alert-danger">
+                @TempData["Error"]
+            </div>
+        }
+
         <div class="lessons-toolbar">
             <a asp-action="Create" class="btn-lessons-primary">
                 <i class="bi bi-plus-lg"></i>
@@ -144,15 +151,34 @@
 
                             @if (isAdmin)
                             {
-                                <a asp-action="Edit" asp-route-id="@lesson.Id"
-                                   class="btn-card-action btn-card-edit">
-                                    Редагувати
-                                </a>
+                                @if (lesson.IsPublished)
+                                {
+                                    <form asp-action="Unpublish" method="post" class="m-0">
+                                        <input type="hidden" name="id" value="@lesson.Id" />
+                                        <button type="submit" class="btn-card-action btn-card-edit">
+                                            Зняти з публікації
+                                        </button>
+                                    </form>
+                                }
+                                else
+                                {
+                                    <form asp-action="Publish" method="post" class="m-0">
+                                        <input type="hidden" name="id" value="@lesson.Id" />
+                                        <button type="submit" class="btn-card-action btn-card-view">
+                                            Опублікувати
+                                        </button>
+                                    </form>
 
-                                <a asp-action="Delete" asp-route-id="@lesson.Id"
-                                   class="btn-card-action btn-card-delete">
-                                    Видалити
-                                </a>
+                                    <a asp-action="Edit" asp-route-id="@lesson.Id"
+                                       class="btn-card-action btn-card-edit">
+                                        Редагувати
+                                    </a>
+
+                                    <a asp-action="Delete" asp-route-id="@lesson.Id"
+                                       class="btn-card-action btn-card-delete">
+                                        Видалити
+                                    </a>
+                                }
                             }
                         </div>
                     }

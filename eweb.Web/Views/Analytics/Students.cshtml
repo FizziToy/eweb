@@ -1,0 +1,84 @@
+@model eweb.Web.Models.Analytics.StudentProgressViewModel
+
+@{
+    ViewData["Title"] = "Статистика учнів";
+}
+
+<div class="page-header">
+    <div>
+        <div class="page-kicker">Аналітика</div>
+        <h1>Статистика учнів</h1>
+        <p>Переглядайте зареєстрованих учнів і їхній поточний прогрес навчання.</p>
+    </div>
+
+    <a asp-action="Index" class="btn btn-outline-primary">
+        <i class="bi bi-graph-up"></i>
+        Загальна аналітика
+    </a>
+</div>
+
+<div class="dashboard-grid mb-4">
+    <div class="dashboard-card">
+        <div class="metric-label">Учнів</div>
+        <div class="metric-value">@Model.Students.Count</div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="metric-label">Середній прогрес</div>
+        <div class="metric-value">
+            @(Model.Students.Any() ? Math.Round(Model.Students.Average(s => s.ProgressPercent), 1) : 0)%
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="metric-label">Активні учні</div>
+        <div class="metric-value">@Model.Students.Count(s => s.ProgressPercent > 0)</div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="metric-label">Завершили все</div>
+        <div class="metric-value">@Model.Students.Count(s => s.ProgressPercent >= 100)</div>
+    </div>
+</div>
+
+@if (!Model.Students.Any())
+{
+    <div class="content-panel">
+        <p class="mb-0 text-muted">Зареєстрованих учнів поки немає.</p>
+    </div>
+}
+else
+{
+    <div class="table-shell">
+        <table class="table align-middle">
+            <thead>
+                <tr>
+                    <th>Учень</th>
+                    <th>Прогрес</th>
+                    <th>Доступні уроки</th>
+                    <th>Питання</th>
+                    <th>Вправи</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var student in Model.Students)
+                {
+                    <tr>
+                        <td class="fw-semibold">@student.Email</td>
+                        <td style="min-width: 220px;">
+                            <div class="student-progress-cell">
+                                <span>@Math.Round(student.ProgressPercent, 1)%</span>
+                                <div class="lessons-progress-track">
+                                    <div class="lessons-progress-fill" style="width:@student.ProgressPercent%"></div>
+                                </div>
+                            </div>
+                        </td>
+                        <td>@student.OpenLessons / @student.TotalLessons</td>
+                        <td>@student.CompletedQuestions / @student.TotalQuestions</td>
+                        <td>@student.CompletedTasks / @student.TotalTasks</td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    </div>
+}

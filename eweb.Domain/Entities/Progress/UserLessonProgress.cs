@@ -15,4 +15,9 @@ public class UserLessonProgress
         LessonId = lessonId;
         OpenedAt = DateTime.UtcNow;
     }
+
+    public void MarkViewed()
+    {
+        OpenedAt = DateTime.UtcNow;
+    }
 }
