@@ -361,3 +361,8 @@ MigrationBackup/
 
 # Fody - auto-generated XML schema
 FodyWeavers.xsd
+/.codex/verify-build
+/eweb.Domain/.codex/verify-tests
+/eweb.Infrastructure/.codex/verify-tests
+/eweb.Tests/.codex/verify-tests
+/eweb.Web/.codex/verify-tests
