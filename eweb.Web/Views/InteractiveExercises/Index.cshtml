@@ -2,50 +2,61 @@
 
 @{
     ViewData["Title"] = "Адмін вправи";
+    var exercises = Model.ToList();
 }
 
-<div class="page-header">
-    <div>
-        <div class="page-kicker">Адміністрування</div>
-        <h1>Інтерактивні вправи</h1>
-        <p>Керуйте вправами, статусами публікації та порядком показу.</p>
+<div class="lessons-page">
+
+    <div class="lessons-header">
+        <div>
+            <div class="page-kicker">Адміністрування</div>
+            <h1>Інтерактивні вправи</h1>
+            <p>Керуйте вправами, статусами публікації та порядком показу.</p>
+        </div>
     </div>
 
-    <a asp-action="CreateFull" class="btn btn-primary">
-        <i class="bi bi-plus-lg"></i>
-        Створити
-    </a>
-</div>
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger">
+            @TempData["Error"]
+        </div>
+    }
 
-@if (TempData["Error"] != null)
-{
-    <div class="alert alert-danger">
-        @TempData["Error"]
+    <div class="lessons-toolbar">
+        <a asp-action="CreateFull" class="btn-lessons-primary">
+            <i class="bi bi-plus-lg"></i>
+            Створити вправу
+        </a>
     </div>
-}
 
-<div class="table-shell">
-    <table class="table">
-        <thead>
-            <tr>
-                <th>Id</th>
-                <th>Урок</th>
-                <th>Назва</th>
-                <th>Порядок</th>
-                <th>Статус</th>
-                <th class="text-end">Дії</th>
-            </tr>
-        </thead>
-        <tbody>
-            @foreach (var ex in Model)
+    @if (!exercises.Any())
+    {
+        <div class="lesson-card">
+            <div class="lesson-card-top">
+                <span class="status-badge status-muted">Порожньо</span>
+            </div>
+
+            <h3>Вправи ще не створені</h3>
+            <p>Додайте першу інтерактивну вправу для уроку.</p>
+        </div>
+    }
+    else
+    {
+        <div class="lessons-grid">
+            @foreach (var exercise in exercises)
             {
-                <tr>
-                    <td>@ex.Id</td>
-                    <td>@ex.LessonId</td>
-                    <td class="fw-semibold">@ex.Title</td>
-                    <td>@ex.Order</td>
-                    <td>
-                        @if (ex.IsPublished)
+                <div class="lesson-card exercise-card">
+                    <div class="lesson-card-top">
+                        <div class="d-flex flex-wrap gap-2">
+                            <span class="status-badge status-muted">
+                                Урок @exercise.LessonId
+                            </span>
+                            <span class="status-badge status-muted">
+                                Порядок @exercise.Order
+                            </span>
+                        </div>
+
+                        @if (exercise.IsPublished)
                         {
                             <span class="status-badge status-success">Опубліковано</span>
                         }
@@ -53,50 +64,68 @@
                         {
                             <span class="status-badge status-muted">Чернетка</span>
                         }
-                    </td>
-                    <td>
-                        <div class="action-row justify-content-end">
+                    </div>
+
+                    <h3>@exercise.Title</h3>
+
+                    @if (!string.IsNullOrWhiteSpace(exercise.Description))
+                    {
+                        <p>@exercise.Description</p>
+                    }
+                    else
+                    {
+                        <p>Опис вправи ще не додано.</p>
+                    }
+
+                    <div class="lesson-card-footer">
+                        <div class="text-muted small">
+                            ID @exercise.Id
+                        </div>
+
+                        <div class="lesson-card-actions">
                             <a asp-action="Details"
-                               asp-route-id="@ex.Id"
-                               class="btn btn-sm btn-outline-primary">
+                               asp-route-id="@exercise.Id"
+                               class="btn-card-action btn-card-view">
                                 Переглянути
                             </a>
 
-                            @if (!ex.IsPublished)
+                            @if (exercise.IsPublished)
                             {
-                                <form asp-action="Publish" method="post">
-                                    <input type="hidden" name="id" value="@ex.Id" />
-                                    <button type="submit" class="btn btn-sm btn-primary">Опублікувати</button>
-                                </form>
-
-                                <a asp-action="Edit"
-                                   asp-route-id="@ex.Id"
-                                   class="btn btn-sm btn-outline-primary">
-                                    Редагувати
-                                </a>
-
-                                <form asp-action="Delete" method="post">
-                                    <input type="hidden" name="id" value="@ex.Id" />
-                                    <button type="submit"
-                                            class="btn btn-sm btn-outline-danger"
-                                            onclick="return confirm('Видалити вправу?')">
-                                        Видалити
+                                <form asp-action="Unpublish" method="post" class="m-0">
+                                    <input type="hidden" name="id" value="@exercise.Id" />
+                                    <button type="submit" class="btn-card-action btn-card-edit">
+                                        Зняти з публікації
                                     </button>
                                 </form>
                             }
                             else
                             {
-                                <form asp-action="Unpublish" method="post">
-                                    <input type="hidden" name="id" value="@ex.Id" />
-                                    <button type="submit" class="btn btn-sm btn-outline-secondary">
-                                        Зняти з публікації
+                                <form asp-action="Publish" method="post" class="m-0">
+                                    <input type="hidden" name="id" value="@exercise.Id" />
+                                    <button type="submit" class="btn-card-action btn-card-view">
+                                        Опублікувати
+                                    </button>
+                                </form>
+
+                                <a asp-action="Edit"
+                                   asp-route-id="@exercise.Id"
+                                   class="btn-card-action btn-card-edit">
+                                    Редагувати
+                                </a>
+
+                                <form asp-action="Delete" method="post" class="m-0">
+                                    <input type="hidden" name="id" value="@exercise.Id" />
+                                    <button type="submit"
+                                            class="btn-card-action btn-card-delete"
+                                            onclick="return confirm('Видалити вправу?')">
+                                        Видалити
                                     </button>
                                 </form>
                             }
                         </div>
-                    </td>
-                </tr>
+                    </div>
+                </div>
             }
-        </tbody>
-    </table>
+        </div>
+    }
 </div>

@@ -68,9 +68,6 @@ else
                         <td style="min-width: 220px;">
                             <div class="student-progress-cell">
                                 <span>@Math.Round(student.ProgressPercent, 1)%</span>
-                                <div class="lessons-progress-track">
-                                    <div class="lessons-progress-fill" style="width:@student.ProgressPercent%"></div>
-                                </div>
                             </div>
                         </td>
                         <td>@student.OpenLessons / @student.TotalLessons</td>
